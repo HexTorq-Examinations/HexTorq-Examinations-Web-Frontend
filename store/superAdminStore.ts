@@ -11,6 +11,8 @@ export interface AdminUser {
   role: 'Admin' | 'Super Admin';
   status: 'Active' | 'Inactive';
   lastLogin: string;
+  organizationId?: string;
+  organizationName?: string;
 }
 
 export interface Organization {

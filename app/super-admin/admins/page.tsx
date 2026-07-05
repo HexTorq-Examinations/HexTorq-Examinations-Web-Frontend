@@ -17,21 +17,23 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 import { useSuperAdminStore, AdminUser } from '@/store/superAdminStore';
 
 export default function AdminsPage() {
-  const { admins, fetchAdmins, addAdmin, updateAdmin, deleteAdmin } = useSuperAdminStore();
+  const { admins, fetchAdmins, addAdmin, updateAdmin, deleteAdmin, organizations, fetchOrganizations } = useSuperAdminStore();
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchAdmins();
-  }, [fetchAdmins]);
+    fetchOrganizations();
+  }, [fetchAdmins, fetchOrganizations]);
   const [addOpen, setAddOpen] = useState(false);
   const [editAdmin, setEditAdmin] = useState<AdminUser | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', employeeId: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', employeeId: '', role: 'Admin' as 'Admin' | 'Super Admin', organizationId: '' });
 
   const filtered = admins.filter(a =>
     a.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -47,26 +49,34 @@ export default function AdminsPage() {
   ];
 
   const openAdd = () => {
-    setForm({ name: '', email: '', phone: '', employeeId: '' });
+    setForm({ name: '', email: '', phone: '', employeeId: '', role: 'Admin', organizationId: '' });
     setEditAdmin(null);
     setAddOpen(true);
   };
 
-  const openEdit = (admin: any) => {
-    setForm({ name: admin.name, email: admin.email, phone: admin.phone, employeeId: admin.employeeId });
+  const openEdit = (admin: AdminUser) => {
+    setForm({
+      name: admin.name,
+      email: admin.email,
+      phone: admin.phone,
+      employeeId: admin.employeeId,
+      role: admin.role,
+      organizationId: admin.organizationId || '',
+    });
     setEditAdmin(admin);
     setAddOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.name || !form.email) { toast.error('Name and email are required'); return; }
+    if (form.role === 'Admin' && !form.organizationId) { toast.error('Please select an organization for this Admin'); return; }
+
     if (editAdmin) {
       await updateAdmin(editAdmin.id, form);
     } else {
       await addAdmin({
         ...form,
         employeeId: form.employeeId || `EMP-${Math.floor(Math.random() * 1000)}`,
-        role: 'Admin', 
         status: 'Active'
       });
     }
@@ -154,6 +164,7 @@ export default function AdminsPage() {
                 <TableHead>Employee ID</TableHead>
                 <TableHead>Contact Info</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Organization</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Login</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -162,7 +173,7 @@ export default function AdminsPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-400">No admins found matching your search.</TableCell>
+                  <TableCell colSpan={8} className="text-center py-12 text-slate-400">No admins found matching your search.</TableCell>
                 </TableRow>
               ) : filtered.map((admin) => (
                 <TableRow key={admin.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
@@ -177,6 +188,7 @@ export default function AdminsPage() {
                   <TableCell>
                     <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400">{admin.role}</Badge>
                   </TableCell>
+                  <TableCell className="text-slate-600 dark:text-slate-400 text-sm">{admin.organizationName || '—'}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={admin.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'}>
                       {admin.status}
@@ -240,6 +252,36 @@ export default function AdminsPage() {
                 <Input placeholder="EMP-001" value={form.employeeId} onChange={e => setForm(f => ({ ...f, employeeId: e.target.value }))} />
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Role *</Label>
+              <Select value={form.role} onValueChange={(val) => setForm(f => ({ ...f, role: (val || 'Admin') as 'Admin' | 'Super Admin' }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Super Admin">Super Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.role === 'Admin' && (
+              <div className="space-y-2">
+                <Label>Organization *</Label>
+                <Select value={form.organizationId} onValueChange={(val) => setForm(f => ({ ...f, organizationId: val || '' }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {organizations.length === 0 && (
+                  <p className="text-xs text-amber-600">No organizations yet — create one first under Organizations.</p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>

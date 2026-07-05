@@ -14,6 +14,7 @@ interface AdminState {
   // Students
   fetchStudents: () => Promise<void>;
   addStudent: (student: Omit<Student, 'id' | 'createdAt'>) => Promise<void>;
+  importStudentsFromFile: (file: File) => Promise<number>;
   updateStudent: (id: string, student: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
 
@@ -61,6 +62,20 @@ export const useAdminStore = create<AdminState>()((set, get) => ({
     const { data } = await api.post('/students', studentData);
     set((state) => ({ students: [data, ...state.students], isLoading: false }));
     toast.success('Student Added Successfully');
+  },
+  importStudentsFromFile: async (file) => {
+    set({ isLoading: true });
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const { data } = await api.post('/students/import', formData);
+      set((state) => ({ students: [...data, ...state.students], isLoading: false }));
+      toast.success(`${data.length} Students Imported Successfully`);
+      return data.length;
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
+    }
   },
   updateStudent: async (id, data) => {
     set({ isLoading: true });

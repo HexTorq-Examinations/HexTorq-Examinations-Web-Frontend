@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, GraduationCap, ClipboardCheck, UserPlus, MoreVertical, Edit, Trash2, Eye, Plus } from 'lucide-react';
+import { Users, GraduationCap, ClipboardCheck, UserPlus, MoreVertical, Edit, Trash2, Eye, Plus, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -28,6 +28,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/common/SkeletonTable';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { StudentFormModal } from './modals/StudentFormModal';
+import { FileImportStudentsModal } from './modals/FileImportStudentsModal';
 
 interface StudentsViewProps {
   role: 'admin' | 'super-admin';
@@ -36,13 +37,15 @@ interface StudentsViewProps {
 export function StudentsView({ role }: StudentsViewProps) {
   const isSuperAdmin = role === 'super-admin';
   const { students, isLoading, fetchStudents, deleteStudent } = useAdminStore();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
+
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
@@ -105,9 +108,14 @@ export function StudentsView({ role }: StudentsViewProps) {
         showSearch={true}
         onSearch={setSearchTerm}
         actions={
-          <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Plus className="w-4 h-4 mr-2" /> Add Student
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={() => setImportModalOpen(true)} variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950">
+              <UploadCloud className="w-4 h-4 mr-2" /> Import File
+            </Button>
+            <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Plus className="w-4 h-4 mr-2" /> Add Student
+            </Button>
+          </div>
         }
       />
       
@@ -222,7 +230,12 @@ export function StudentsView({ role }: StudentsViewProps) {
         studentToEdit={studentToEdit}
       />
 
-      <ConfirmDialog 
+      <FileImportStudentsModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+      />
+
+      <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
         title="Delete Student"
