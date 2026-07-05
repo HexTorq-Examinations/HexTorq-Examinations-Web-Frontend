@@ -79,13 +79,13 @@ export function StudentsView({ role, classId, className, onBack, breadcrumbs }: 
     { title: 'Active Students', value: students.filter(s => s.status === 'Active').length, icon: GraduationCap, color: 'text-emerald-600', bg: 'bg-emerald-100' },
     { title: 'Suspended', value: students.filter(s => s.status === 'Suspended').length, icon: ClipboardCheck, color: 'text-red-600', bg: 'bg-red-100' },
     { 
-      title: 'New Registrations', 
+      title: 'New Registrations (24h)', 
       value: students.filter(s => {
         if (!s.createdAt) return false;
         const createdDate = new Date(s.createdAt);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        return createdDate >= sevenDaysAgo;
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        return createdDate >= oneDayAgo;
       }).length, 
       icon: UserPlus, 
       color: 'text-amber-600', 
