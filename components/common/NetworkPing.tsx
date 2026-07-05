@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { Wifi } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function NetworkPing() {
+export function NetworkPing({ variant = 'default' }: { variant?: 'default' | 'transparent' }) {
   const [ping, setPing] = useState<number | null>(null);
 
   useEffect(() => {
@@ -39,11 +39,16 @@ export function NetworkPing() {
 
   return (
     <div 
-      className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shadow-sm"
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm",
+        variant === 'default' 
+          ? "border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900" 
+          : "border-transparent bg-white/10 text-white"
+      )}
       title={`Network Latency: ${ping}ms`}
     >
       <Wifi className={cn("w-3.5 h-3.5", getPingColor())} />
-      <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400">
+      <span className={cn("text-xs font-mono font-medium", variant === 'default' ? "text-slate-600 dark:text-slate-400" : "text-slate-200")}>
         {ping}ms
       </span>
     </div>
