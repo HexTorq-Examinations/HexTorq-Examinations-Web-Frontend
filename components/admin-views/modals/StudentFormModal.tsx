@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, EyeOff, Info } from 'lucide-react';
 
 interface StudentFormModalProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface StudentFormModalProps {
 
 export function StudentFormModal({ open, onOpenChange, studentToEdit }: StudentFormModalProps) {
   const { addStudent, updateStudent, isLoading } = useAdminStore();
+  const [showPassword, setShowPassword] = React.useState(false);
   
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<Student>({
     resolver: zodResolver(StudentSchema) as any,
@@ -88,10 +90,24 @@ export function StudentFormModal({ open, onOpenChange, studentToEdit }: StudentF
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register('password')} placeholder="e.g., secret123" />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md" title="If left blank, the student's password will be set to 'password123'">
+                  <Info className="h-3.5 w-3.5" />
+                  <span>Default: password123</span>
+                </div>
+              </div>
+              <div className="relative">
+                <Input id="password" type={showPassword ? 'text' : 'password'} {...register('password')} placeholder="e.g., secret123" className="pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
-              <p className="text-xs text-slate-500">Leave blank to use default password.</p>
             </div>
 
             <div className="space-y-2">
