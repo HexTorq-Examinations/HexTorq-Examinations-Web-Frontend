@@ -78,7 +78,19 @@ export function StudentsView({ role, classId, className, onBack, breadcrumbs }: 
     { title: 'Total Students', value: students.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
     { title: 'Active Students', value: students.filter(s => s.status === 'Active').length, icon: GraduationCap, color: 'text-emerald-600', bg: 'bg-emerald-100' },
     { title: 'Suspended', value: students.filter(s => s.status === 'Suspended').length, icon: ClipboardCheck, color: 'text-red-600', bg: 'bg-red-100' },
-    { title: 'New Registrations', value: '15', icon: UserPlus, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { 
+      title: 'New Registrations', 
+      value: students.filter(s => {
+        if (!s.createdAt) return false;
+        const createdDate = new Date(s.createdAt);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        return createdDate >= sevenDaysAgo;
+      }).length, 
+      icon: UserPlus, 
+      color: 'text-amber-600', 
+      bg: 'bg-amber-100' 
+    },
   ];
 
   const handleEdit = (student: Student) => {
