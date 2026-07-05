@@ -120,7 +120,7 @@ export function ProfileView({ role }: ProfileViewProps) {
                 </div>
                 <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
                   <Phone className="h-4 w-4 shrink-0" />
-                  <span>Not Provided</span>
+                  <span>{user?.phone || 'Not Provided'}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
                   <Clock className="h-4 w-4 shrink-0" />
@@ -223,24 +223,12 @@ export function ProfileView({ role }: ProfileViewProps) {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-slate-900 dark:text-slate-100">Windows • Chrome</h4>
+                            <h4 className="font-semibold text-slate-900 dark:text-slate-100">Current Session</h4>
                             <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-2 py-0">Current</Badge>
                           </div>
-                          <p className="text-sm text-slate-500 mt-1">IP: 192.168.1.1 • Location: New York, USA</p>
+                          <p className="text-sm text-slate-500 mt-1">Logged in: {user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Just now'}</p>
                           <p className="text-xs text-slate-400 mt-1">Active right now</p>
                         </div>
-                      </div>
-                      
-                      <div className="p-6 flex items-start gap-4">
-                        <div className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg shrink-0">
-                          <MonitorSmartphone className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-slate-900 dark:text-slate-100">MacBook Pro • Safari</h4>
-                          <p className="text-sm text-slate-500 mt-1">IP: 192.168.1.14 • Location: Boston, USA</p>
-                          <p className="text-xs text-slate-400 mt-1">Last active: Yesterday at 4:30 PM</p>
-                        </div>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">Revoke</Button>
                       </div>
                     </div>
                   </CardContent>

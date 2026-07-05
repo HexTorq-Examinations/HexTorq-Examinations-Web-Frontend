@@ -7,6 +7,8 @@ export interface User {
   role: Role;
   avatar?: string;
   organizationId?: string; // Optional for Super Admin
+  phone?: string;
+  lastLoginAt?: string;
 }
 
 export interface LoginCredentials {
