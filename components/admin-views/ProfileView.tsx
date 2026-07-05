@@ -25,11 +25,7 @@ export function ProfileView({ role }: ProfileViewProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (user?.avatar) {
-      setAvatarPreview(user.avatar);
-    }
-  }, [user]);
+  const displayAvatar = avatarPreview || user?.avatar;
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,8 +80,8 @@ export function ProfileView({ role }: ProfileViewProps) {
             <CardContent className="p-6 relative pt-0">
               <div className="absolute -top-12 left-6 border-4 border-white dark:border-slate-950 rounded-full bg-slate-100 dark:bg-slate-800 h-24 w-24 flex items-center justify-center shadow-sm">
                 <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                  {avatarPreview ? (
-                    <img src={avatarPreview} alt="Profile" className="h-full w-full object-cover" />
+                  {displayAvatar ? (
+                    <img src={displayAvatar} alt="Profile" className="h-full w-full object-cover" />
                   ) : (
                     <User className="h-10 w-10 text-slate-400" />
                   )}
@@ -202,7 +198,7 @@ export function ProfileView({ role }: ProfileViewProps) {
                   <CardContent className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                       <h4 className="font-semibold text-slate-900 dark:text-slate-100">Secure Your Account</h4>
-                      <p className="text-sm text-slate-500 mt-1 max-w-md">Add an extra layer of security to your account. Once enabled, you'll be prompted to enter a code from an authenticator app.</p>
+                      <p className="text-sm text-slate-500 mt-1 max-w-md">Add an extra layer of security to your account. Once enabled, you&apos;ll be prompted to enter a code from an authenticator app.</p>
                     </div>
                     <Button variant="outline">Enable 2FA</Button>
                   </CardContent>
@@ -226,7 +222,7 @@ export function ProfileView({ role }: ProfileViewProps) {
                             <h4 className="font-semibold text-slate-900 dark:text-slate-100">Current Session</h4>
                             <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-2 py-0">Current</Badge>
                           </div>
-                          <p className="text-sm text-slate-500 mt-1">Logged in: {user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Just now'}</p>
+                          <p suppressHydrationWarning className="text-sm text-slate-500 mt-1">Logged in: {user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Just now'}</p>
                           <p className="text-xs text-slate-400 mt-1">Active right now</p>
                         </div>
                       </div>
