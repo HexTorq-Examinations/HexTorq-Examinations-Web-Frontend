@@ -30,8 +30,9 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit }: Questi
     }
   });
 
-  const watchOptions = watch('options') || ['', '', '', ''];
+  const watchOptions = watch('options') || [];
   const watchAnswer = watch('correctAnswer');
+  const watchType = watch('type');
 
   const appendOption = () => {
     setValue('options', [...watchOptions, '']);
@@ -59,6 +60,18 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit }: Questi
       }
     }
   }, [open, questionToEdit, reset]);
+
+  React.useEffect(() => {
+    if (watchType === 'True/False') {
+      setValue('options', ['True', 'False']);
+      if (watchAnswer > 1) setValue('correctAnswer', 0);
+    } else if (watchType === 'Descriptive') {
+      setValue('options', []);
+      setValue('correctAnswer', 0);
+    } else if (watchType === 'Multiple Choice' && watchOptions.length < 2) {
+      setValue('options', ['', '', '', '']);
+    }
+  }, [watchType]);
 
   const onSubmit = async (data: Question) => {
     if (questionToEdit?.id) {
@@ -141,12 +154,15 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit }: Questi
             </div>
 
             {/* Options Builder */}
+            {watchType !== 'Descriptive' && (
             <div className="space-y-4 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-sm">Options & Answer</h4>
-                <Button type="button" variant="outline" size="sm" onClick={appendOption}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Option
-                </Button>
+                {watchType === 'Multiple Choice' && (
+                  <Button type="button" variant="outline" size="sm" onClick={appendOption}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Option
+                  </Button>
+                )}
               </div>
               
               {errors.options && <p className="text-red-500 text-xs">{errors.options.message}</p>}
@@ -166,9 +182,10 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit }: Questi
                         {...register(`options.${index}` as const)} 
                         placeholder={`Option ${index + 1}`} 
                         className={Number(watchAnswer) === index ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : ''}
+                        readOnly={watchType === 'True/False'}
                       />
                     </div>
-                    {watchOptions.length > 2 && (
+                    {watchType === 'Multiple Choice' && watchOptions.length > 2 && (
                       <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)}>
                         <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
                       </Button>
@@ -178,6 +195,7 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit }: Questi
               </div>
               {errors.correctAnswer && <p className="text-red-500 text-xs">{errors.correctAnswer.message}</p>}
             </div>
+            )}
 
             <div className="space-y-2 col-span-1 md:col-span-2 pt-2">
               <Label htmlFor="explanation">Explanation (Optional)</Label>

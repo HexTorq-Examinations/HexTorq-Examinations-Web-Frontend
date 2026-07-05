@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { Shield, User, GraduationCap, ChevronRight, Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().min(1, 'Please enter your email or Student ID'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -79,11 +79,11 @@ export default function LoginPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email">Email address / Student ID</Label>
               <Input
                 id="email"
-                type="email"
-                placeholder="name@example.com"
+                type="text"
+                placeholder="name@example.com or ENR-001"
                 {...register('email')}
                 className={`h-11 ${errors.email ? 'border-red-500' : ''}`}
               />
