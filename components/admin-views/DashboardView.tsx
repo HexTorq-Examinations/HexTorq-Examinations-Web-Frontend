@@ -1,21 +1,51 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Users, GraduationCap, ClipboardCheck, Activity, Database, CalendarIcon, BarChart2, Bell, CheckCircle2, Clock, CalendarDays, CheckSquare, ShieldCheck, Cpu } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
 import { useAdminStore } from '@/store/adminStore';
 import { useSuperAdminStore } from '@/store/superAdminStore';
+import { api } from '@/lib/api';
 
 interface DashboardViewProps {
   role: 'admin' | 'super-admin';
 }
 
+interface ActivityItem {
+  title: string;
+  desc: string;
+  time: string;
+  type: 'create' | 'publish' | 'user' | 'alert';
+}
+
+interface OverviewData {
+  examTrends: { name: string; created: number; completed: number }[];
+  examStatusDistribution: { name: string; value: number; color: string }[];
+  studentGrowth: { name: string; active: number; new: number }[];
+  recentActivity: ActivityItem[];
+  upcomingExams: { name: string; time: string; enrolled: number }[];
+  pendingTasks: { task: string; status: string }[];
+}
+
+const timeAgo = (iso: string) => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min${mins > 1 ? 's' : ''} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? 's' : ''} ago`;
+};
+
 export function DashboardView({ role }: DashboardViewProps) {
   const isSuperAdmin = role === 'super-admin';
   const { students, exams, questions, results, fetchStudents, fetchExams, fetchQuestions, fetchResults } = useAdminStore();
   const { admins, fetchAdmins } = useSuperAdminStore();
+  const [overview, setOverview] = useState<OverviewData | null>(null);
+  const [isLoadingOverview, setIsLoadingOverview] = useState(true);
 
   useEffect(() => {
     fetchStudents();
@@ -24,6 +54,15 @@ export function DashboardView({ role }: DashboardViewProps) {
     fetchResults();
     if (isSuperAdmin) fetchAdmins();
   }, [fetchStudents, fetchExams, fetchQuestions, fetchResults, fetchAdmins, isSuperAdmin]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingOverview(true);
+    api.get('/dashboard/overview')
+      .then(({ data }) => { if (!cancelled) setOverview(data); })
+      .finally(() => { if (!cancelled) setIsLoadingOverview(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Shared stats
   const stats = [
@@ -36,45 +75,27 @@ export function DashboardView({ role }: DashboardViewProps) {
     { title: 'Published Results', value: results.length.toLocaleString(), icon: BarChart2, color: 'text-teal-600', bg: 'bg-teal-100' },
   ];
 
-  // Mock data for charts
-  const examCreationData = [
-    { name: 'Jan', created: 400, completed: 240 },
-    { name: 'Feb', created: 300, completed: 139 },
-    { name: 'Mar', created: 200, completed: 980 },
-    { name: 'Apr', created: 278, completed: 390 },
-    { name: 'May', created: 189, completed: 480 },
-    { name: 'Jun', created: 239, completed: 380 },
-    { name: 'Jul', created: 349, completed: 430 },
-  ];
-
-  const studentGrowthData = [
-    { name: 'Q1', active: 4000, new: 2400 },
-    { name: 'Q2', active: 3000, new: 1398 },
-    { name: 'Q3', active: 2000, new: 9800 },
-    { name: 'Q4', active: 2780, new: 3908 },
-  ];
-
-  const examStatusData = [
-    { name: 'Completed', value: 400, color: '#10b981' },
-    { name: 'Active', value: 300, color: '#3b82f6' },
-    { name: 'Draft', value: 300, color: '#94a3b8' },
-    { name: 'Scheduled', value: 200, color: '#8b5cf6' },
-  ];
+  const examTrends = overview?.examTrends || [];
+  const examStatusData = overview?.examStatusDistribution || [];
+  const studentGrowthData = overview?.studentGrowth || [];
+  const recentActivity = overview?.recentActivity || [];
+  const upcomingExams = overview?.upcomingExams || [];
+  const pendingTasks = overview?.pendingTasks || [];
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader 
-        title={`${isSuperAdmin ? 'Super ' : ''}Admin Dashboard`} 
+      <PageHeader
+        title={`${isSuperAdmin ? 'Super ' : ''}Admin Dashboard`}
         description="Platform overview, system health metrics, and quick insights."
         breadcrumbs={[
-          { label: isSuperAdmin ? 'Super Admin' : 'Admin', href: `/${isSuperAdmin ? 'super-admin' : 'admin'}/dashboard` }, 
+          { label: isSuperAdmin ? 'Super Admin' : 'Admin', href: `/${isSuperAdmin ? 'super-admin' : 'admin'}/dashboard` },
           { label: 'Dashboard' }
         ]}
         showSearch={false}
       />
 
 
-      
+
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
@@ -93,7 +114,7 @@ export function DashboardView({ role }: DashboardViewProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Exams Created Area Chart */}
         <div className="lg:col-span-8">
           <Card className="border-slate-200 dark:border-slate-800 shadow-sm h-full">
@@ -103,8 +124,11 @@ export function DashboardView({ role }: DashboardViewProps) {
             </CardHeader>
             <CardContent>
               <div className="h-[300px] w-full">
+                {isLoadingOverview ? (
+                  <div className="h-full w-full flex items-center justify-center text-slate-400 text-sm">Loading...</div>
+                ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={examCreationData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <AreaChart data={examTrends} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -116,7 +140,7 @@ export function DashboardView({ role }: DashboardViewProps) {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} allowDecimals={false} />
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend />
@@ -124,6 +148,7 @@ export function DashboardView({ role }: DashboardViewProps) {
                     <Area type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorCompleted)" name="Exams Completed" />
                   </AreaChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -137,6 +162,11 @@ export function DashboardView({ role }: DashboardViewProps) {
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center">
               <div className="h-[250px] w-full">
+                {isLoadingOverview ? (
+                  <div className="h-full w-full flex items-center justify-center text-slate-400 text-sm">Loading...</div>
+                ) : examStatusData.every(d => d.value === 0) ? (
+                  <div className="h-full w-full flex items-center justify-center text-slate-400 text-sm">No exams yet</div>
+                ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -156,6 +186,7 @@ export function DashboardView({ role }: DashboardViewProps) {
                     <Legend verticalAlign="bottom" height={36} />
                   </PieChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -166,19 +197,25 @@ export function DashboardView({ role }: DashboardViewProps) {
           <Card className="border-slate-200 dark:border-slate-800 shadow-sm h-full">
             <CardHeader>
               <CardTitle className="text-lg font-bold">Student Growth</CardTitle>
+              <CardDescription>Registrations by quarter, this year</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[250px] w-full">
+                {isLoadingOverview ? (
+                  <div className="h-full w-full flex items-center justify-center text-slate-400 text-sm">Loading...</div>
+                ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={studentGrowthData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} allowDecimals={false} />
                     <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend />
-                    <Bar dataKey="active" stackId="a" fill="#3b82f6" name="Active Students" radius={[0, 0, 4, 4]} />
-                    <Bar dataKey="new" stackId="a" fill="#60a5fa" name="New Registrations" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="new" fill="#60a5fa" name="New Registrations" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="active" fill="#3b82f6" name="Total Students (cumulative)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -191,13 +228,13 @@ export function DashboardView({ role }: DashboardViewProps) {
               <CardTitle className="text-lg font-bold">Recent Activity Timeline</CardTitle>
             </CardHeader>
             <CardContent>
+              {isLoadingOverview ? (
+                <div className="text-slate-400 text-sm">Loading...</div>
+              ) : recentActivity.length === 0 ? (
+                <div className="text-slate-400 text-sm">No recent activity yet.</div>
+              ) : (
               <div className="relative border-l border-slate-200 dark:border-slate-800 ml-3 space-y-6">
-                {[
-                  { title: 'New Exam Created', desc: 'Prof. Turing created "Data Structures"', time: '10 mins ago', type: 'create' },
-                  { title: 'Results Published', desc: 'Midterm Science results are live', time: '1 hour ago', type: 'publish' },
-                  { title: 'System Update', desc: 'Platform updated to version 2.4.1', time: '2 hours ago', type: 'alert' },
-                  { title: 'Student Import', desc: '150 new students imported via CSV', time: '3 hours ago', type: 'user' },
-                ].map((activity, i) => (
+                {recentActivity.map((activity, i) => (
                   <div key={i} className="pl-6 relative">
                     <div className={`absolute -left-1.5 top-1 w-3 h-3 rounded-full border-2 border-white dark:border-slate-950 ${
                       activity.type === 'create' ? 'bg-blue-500' :
@@ -206,17 +243,18 @@ export function DashboardView({ role }: DashboardViewProps) {
                     }`} />
                     <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{activity.title}</h4>
                     <p className="text-xs text-slate-500 mt-1">{activity.desc}</p>
-                    <span className="text-[10px] text-slate-400 block mt-1">{activity.time}</span>
+                    <span className="text-[10px] text-slate-400 block mt-1">{timeAgo(activity.time)}</span>
                   </div>
                 ))}
               </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
         {/* Upcoming Exams & Pending Tasks */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-          
+
           {/* Upcoming Exams */}
           <Card className="border-slate-200 dark:border-slate-800 shadow-sm flex-1">
             <CardHeader className="pb-3">
@@ -225,21 +263,23 @@ export function DashboardView({ role }: DashboardViewProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+              {isLoadingOverview ? (
+                <div className="p-4 text-slate-400 text-sm">Loading...</div>
+              ) : upcomingExams.length === 0 ? (
+                <div className="p-4 text-slate-400 text-sm">No upcoming exams scheduled.</div>
+              ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {[
-                  { name: 'Mathematics Final', time: 'Tomorrow, 10:00 AM', enrolled: 120 },
-                  { name: 'History Midterm', time: 'Wed, 2:00 PM', enrolled: 85 },
-                  { name: 'Physics Quiz 1', time: 'Fri, 9:00 AM', enrolled: 200 },
-                ].map((exam, i) => (
+                {upcomingExams.map((exam, i) => (
                   <div key={i} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
                     <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{exam.name}</h4>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3" /> {exam.time}</span>
+                      <span className="text-xs text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(exam.time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
                       <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">{exam.enrolled} Students</span>
                     </div>
                   </div>
                 ))}
               </div>
+              )}
             </CardContent>
           </Card>
 
@@ -251,19 +291,21 @@ export function DashboardView({ role }: DashboardViewProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {[
-                { task: 'Review flagged answers (Biology)', status: 'High Priority' },
-                { task: 'Approve new admin accounts', status: 'Medium' },
-                { task: 'System backup verification', status: 'Routine' }
-              ].map((t, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="mt-0.5 w-4 h-4 rounded border border-slate-300 dark:border-slate-700 flex-shrink-0"></div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.task}</p>
-                    <span className={`text-[10px] font-semibold tracking-wider uppercase ${t.status === 'High Priority' ? 'text-red-500' : t.status === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}`}>{t.status}</span>
+              {isLoadingOverview ? (
+                <div className="text-slate-400 text-sm">Loading...</div>
+              ) : pendingTasks.length === 0 ? (
+                <div className="text-slate-400 text-sm">Nothing pending — all caught up.</div>
+              ) : (
+                pendingTasks.map((t, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="mt-0.5 w-4 h-4 rounded border border-slate-300 dark:border-slate-700 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.task}</p>
+                      <span className={`text-[10px] font-semibold tracking-wider uppercase ${t.status === 'High Priority' ? 'text-red-500' : t.status === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}`}>{t.status}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
