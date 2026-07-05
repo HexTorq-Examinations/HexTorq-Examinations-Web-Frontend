@@ -35,9 +35,10 @@ interface StudentsViewProps {
   classId: string;
   className?: string;
   onBack?: () => void;
+  breadcrumbs?: { label: string; href?: string; onClick?: () => void }[];
 }
 
-export function StudentsView({ role, classId, className, onBack }: StudentsViewProps) {
+export function StudentsView({ role, classId, className, onBack, breadcrumbs }: StudentsViewProps) {
   const isSuperAdmin = role === 'super-admin';
   const { students, isLoading, fetchStudents, deleteStudent } = useAdminStore();
 
@@ -103,7 +104,7 @@ export function StudentsView({ role, classId, className, onBack }: StudentsViewP
       <PageHeader
         title={className ? `Students — ${className}` : 'Student Management'}
         description="Manage student records, assignments, and profiles."
-        breadcrumbs={[
+        breadcrumbs={breadcrumbs || [
           { label: isSuperAdmin ? 'Super Admin' : 'Admin', href: `/${role}/dashboard` },
           { label: 'Students' }
         ]}

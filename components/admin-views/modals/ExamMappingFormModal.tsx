@@ -95,7 +95,11 @@ export function ExamMappingFormModal({ open, onOpenChange, exam, mappingToEdit }
               <div className="space-y-2">
                 <Label>School *</Label>
                 <Select value={schoolId} onValueChange={handleSchoolChange}>
-                  <SelectTrigger><SelectValue placeholder="Select school" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select school">
+                      {(value: string | null) => schools.find((s) => s.id === value)?.name ?? 'Select school'}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {schools.map((s) => <SelectItem key={s.id} value={s.id!}>{s.name}</SelectItem>)}
                   </SelectContent>
@@ -104,7 +108,11 @@ export function ExamMappingFormModal({ open, onOpenChange, exam, mappingToEdit }
               <div className="space-y-2">
                 <Label>Department *</Label>
                 <Select value={departmentId} onValueChange={handleDepartmentChange} disabled={!schoolId}>
-                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department">
+                      {(value: string | null) => departments.find((d) => d.id === value)?.name ?? 'Select department'}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => <SelectItem key={d.id} value={d.id!}>{d.name}</SelectItem>)}
                   </SelectContent>
@@ -113,7 +121,11 @@ export function ExamMappingFormModal({ open, onOpenChange, exam, mappingToEdit }
               <div className="space-y-2">
                 <Label>Class *</Label>
                 <Select value={classId} onValueChange={(id) => id && setClassId(id)} disabled={!departmentId}>
-                  <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class">
+                      {(value: string | null) => classes.find((c) => c.id === value)?.name ?? 'Select class'}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {classes.map((c) => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}
                   </SelectContent>

@@ -39,6 +39,23 @@ export default function AdminStudents() {
     if (selectedBatchId) fetchSchools(selectedBatchId);
   }, [selectedBatchId, fetchSchools]);
 
+  // Jumps to any level in the trail, clearing everything deeper than it —
+  // used by both the breadcrumb links and the innermost "Back" button, so
+  // the whole drill-down can always be reset back to any ancestor level.
+  const goToLevel = (target: Level) => {
+    if (target === 'schools') {
+      setSelectedSchoolId(null);
+      setSelectedDepartmentId(null);
+      setSelectedClassId(null);
+    } else if (target === 'departments') {
+      setSelectedDepartmentId(null);
+      setSelectedClassId(null);
+    } else if (target === 'classes') {
+      setSelectedClassId(null);
+    }
+    setLevel(target);
+  };
+
   const goToSchool = (id: string) => {
     setSelectedSchoolId(id);
     setLevel('departments');
@@ -58,10 +75,14 @@ export default function AdminStudents() {
 
   const breadcrumbs = [
     { label: 'Admin', href: '/admin/dashboard' },
-    { label: 'Students' },
+    { label: 'Students', onClick: () => goToLevel('schools') },
     ...(selectedBatch ? [{ label: selectedBatch.name }] : []),
-    ...(level !== 'schools' && selectedSchool ? [{ label: selectedSchool.name }] : []),
-    ...(['classes', 'students'].includes(level) && selectedDepartment ? [{ label: selectedDepartment.name }] : []),
+    ...(level !== 'schools' && selectedSchool
+      ? [{ label: selectedSchool.name, ...(level !== 'departments' ? { onClick: () => goToLevel('departments') } : {}) }]
+      : []),
+    ...(['classes', 'students'].includes(level) && selectedDepartment
+      ? [{ label: selectedDepartment.name, ...(level !== 'classes' ? { onClick: () => goToLevel('classes') } : {}) }]
+      : []),
     ...(level === 'students' && selectedClass ? [{ label: selectedClass.name }] : []),
   ];
 
@@ -83,7 +104,8 @@ export default function AdminStudents() {
         role="admin"
         classId={selectedClassId}
         className={selectedClass?.name}
-        onBack={() => setLevel('classes')}
+        breadcrumbs={breadcrumbs}
+        onBack={() => goToLevel('classes')}
       />
     );
   }
@@ -103,8 +125,8 @@ export default function AdminStudents() {
           level !== 'schools' ? (
             <button
               onClick={() => {
-                if (level === 'departments') setLevel('schools');
-                else if (level === 'classes') setLevel('departments');
+                if (level === 'departments') goToLevel('schools');
+                else if (level === 'classes') goToLevel('departments');
               }}
               className="text-sm font-medium text-blue-600 hover:underline"
             >

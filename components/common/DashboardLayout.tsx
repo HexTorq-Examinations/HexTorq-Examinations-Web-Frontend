@@ -13,7 +13,6 @@ import { LogOut, Settings, User, Search, Bell, MessageSquare, ChevronLeft, Chevr
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { format } from 'date-fns';
-import { MessagingPanel } from '@/components/common/MessagingPanel';
 import { useMessagingStore } from '@/store/messagingStore';
 import { useServerClock } from '@/hooks/useServerClock';
 import { useAcademicStore } from '@/store/academicStore';
@@ -42,7 +41,7 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [hoveredNavItem, setHoveredNavItem] = useState<{ name: string; top: number } | null>(null);
-  const { unreadTotal, fetchUnreadTotal, openPanel } = useMessagingStore();
+  const { unreadTotal, fetchUnreadTotal } = useMessagingStore();
   const { batches, selectedBatchId, setSelectedBatchId, fetchBatches, addBatch, isLoading: isAcademicLoading } = useAcademicStore();
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
 
@@ -82,7 +81,7 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
 
   const profileHref = `${rolePrefix}/profile`;
   const settingsHref = user?.role === 'STUDENT' ? '/student/notifications' : `${rolePrefix}/settings`;
-  const notificationsHref = user?.role === 'STUDENT' ? '/student/notifications' : `${rolePrefix}/dashboard`;
+  const notificationsHref = user?.role === 'STUDENT' ? '/student/notifications' : `${rolePrefix}/messages`;
 
   // Client-side auth guard — redirect to login if not authenticated
   useEffect(() => {
@@ -286,7 +285,9 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
                   <Select value={selectedBatchId ?? undefined} onValueChange={setSelectedBatchId}>
                     <SelectTrigger className="h-9 w-40 gap-2 rounded-full border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-medium">
                       <Layers className="h-3.5 w-3.5 text-slate-400" />
-                      <SelectValue placeholder="Select batch" />
+                      <SelectValue placeholder="Select batch">
+                        {(value: string | null) => batches.find((b) => b.id === value)?.name ?? 'Select batch'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {batches.map((b) => (
@@ -327,7 +328,7 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => user?.role === 'STUDENT' ? router.push(notificationsHref) : openPanel()}
+              onClick={() => router.push(notificationsHref)}
               className="h-9 w-9 text-slate-500 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 relative"
             >
               <Bell className="h-4 w-4" />
@@ -388,8 +389,6 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
           </div>
         </main>
       </div>
-
-      <MessagingPanel />
 
       {user?.role === 'ADMIN' && (
         <NameFormDialog

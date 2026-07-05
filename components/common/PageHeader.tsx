@@ -10,7 +10,7 @@ import { ChevronRight } from 'lucide-react';
 interface PageHeaderProps {
   title: string;
   description?: string;
-  breadcrumbs?: { label: string; href?: string }[];
+  breadcrumbs?: { label: string; href?: string; onClick?: () => void }[];
   showSearch?: boolean;
   actions?: React.ReactNode;
   onSearch?: (searchTerm: string) => void;
@@ -51,6 +51,10 @@ export function PageHeader({
                     <Link href={crumb.href} className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
                       {crumb.label}
                     </Link>
+                  ) : crumb.onClick ? (
+                    <button type="button" onClick={crumb.onClick} className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                      {crumb.label}
+                    </button>
                   ) : (
                     <span className="text-slate-900 dark:text-slate-100">{crumb.label}</span>
                   )}
