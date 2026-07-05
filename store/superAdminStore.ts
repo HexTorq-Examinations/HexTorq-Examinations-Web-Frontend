@@ -57,7 +57,8 @@ export const useSuperAdminStore = create<SuperAdminState>()((set, get) => ({
   addAdmin: async (adminData) => {
     set({ isLoading: true });
     try {
-      const { data } = await api.post('/admins', adminData);
+      const payload = { ...adminData, frontendUrl: window.location.origin };
+      const { data } = await api.post('/admins', payload);
       set((state) => ({ admins: [data, ...state.admins], isLoading: false }));
       toast.success('Admin Added Successfully');
     } catch (error) {
@@ -98,7 +99,8 @@ export const useSuperAdminStore = create<SuperAdminState>()((set, get) => ({
   addOrganization: async (orgData) => {
     set({ isLoading: true });
     try {
-      const { data } = await api.post('/organizations', orgData);
+      const payload = { ...orgData, frontendUrl: window.location.origin };
+      const { data } = await api.post('/organizations', payload);
       set((state) => ({ organizations: [data, ...state.organizations], isLoading: false }));
       toast.success('Organization Added Successfully');
     } catch (error) {
