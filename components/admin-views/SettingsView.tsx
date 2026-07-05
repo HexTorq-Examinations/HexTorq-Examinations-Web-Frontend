@@ -39,21 +39,21 @@ export function SettingsView({ role }: SettingsViewProps) {
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <Tabs defaultValue="general" className="col-span-12 flex flex-col md:flex-row gap-6">
+        <Tabs defaultValue="general" orientation="vertical" className="col-span-12 flex flex-col md:flex-row gap-6">
           
           {/* Vertical Tabs List */}
           <div className="md:w-64 shrink-0">
             <TabsList className="flex flex-col h-auto bg-transparent space-y-1">
-              <TabsTrigger value="general" className="justify-start px-4 py-2.5 w-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm">
+              <TabsTrigger value="general" className="justify-start px-4 py-2.5 w-full data-[selected]:bg-white dark:data-[selected]:bg-slate-900 data-[selected]:shadow-sm">
                 <SettingsIcon className="w-4 h-4 mr-2" /> General
               </TabsTrigger>
-              <TabsTrigger value="exam-rules" className="justify-start px-4 py-2.5 w-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm">
+              <TabsTrigger value="exam-rules" className="justify-start px-4 py-2.5 w-full data-[selected]:bg-white dark:data-[selected]:bg-slate-900 data-[selected]:shadow-sm">
                 <FileText className="w-4 h-4 mr-2" /> Exam Rules
               </TabsTrigger>
-              <TabsTrigger value="theme" className="justify-start px-4 py-2.5 w-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm">
+              <TabsTrigger value="theme" className="justify-start px-4 py-2.5 w-full data-[selected]:bg-white dark:data-[selected]:bg-slate-900 data-[selected]:shadow-sm">
                 <Palette className="w-4 h-4 mr-2" /> Theme
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="justify-start px-4 py-2.5 w-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm">
+              <TabsTrigger value="notifications" className="justify-start px-4 py-2.5 w-full data-[selected]:bg-white dark:data-[selected]:bg-slate-900 data-[selected]:shadow-sm">
                 <Bell className="w-4 h-4 mr-2" /> Notifications
               </TabsTrigger>
               
@@ -61,10 +61,10 @@ export function SettingsView({ role }: SettingsViewProps) {
                 <>
                   <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
                   <div className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Super Admin</div>
-                  <TabsTrigger value="security" className="justify-start px-4 py-2.5 w-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm text-amber-600 dark:text-amber-500">
+                  <TabsTrigger value="security" className="justify-start px-4 py-2.5 w-full data-[selected]:bg-white dark:data-[selected]:bg-slate-900 data-[selected]:shadow-sm text-amber-600 dark:text-amber-500">
                     <Shield className="w-4 h-4 mr-2" /> Security
                   </TabsTrigger>
-                  <TabsTrigger value="backup" className="justify-start px-4 py-2.5 w-full data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm text-purple-600 dark:text-purple-500">
+                  <TabsTrigger value="backup" className="justify-start px-4 py-2.5 w-full data-[selected]:bg-white dark:data-[selected]:bg-slate-900 data-[selected]:shadow-sm text-purple-600 dark:text-purple-500">
                     <HardDrive className="w-4 h-4 mr-2" /> Backup & Recovery
                   </TabsTrigger>
                 </>
