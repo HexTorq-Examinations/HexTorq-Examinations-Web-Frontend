@@ -52,7 +52,21 @@ export function BulkQuestionEntryModal({ open, onOpenChange }: BulkQuestionEntry
 
   const updateQuestion = (index: number, field: keyof Question, value: any) => {
     const updated = [...questions];
-    updated[index] = { ...updated[index], [field]: value };
+    let newQ = { ...updated[index], [field]: value };
+    
+    if (field === 'type') {
+      if (value === 'True/False') {
+        newQ.options = ['True', 'False'];
+        if ((newQ.correctAnswer ?? 0) > 1) newQ.correctAnswer = 0;
+      } else if (value === 'Descriptive') {
+        newQ.options = [];
+        newQ.correctAnswer = 0;
+      } else if (value === 'Multiple Choice' && (!newQ.options || newQ.options.length < 2)) {
+        newQ.options = ['', '', '', ''];
+      }
+    }
+    
+    updated[index] = newQ;
     setQuestions(updated);
   };
 
@@ -204,12 +218,15 @@ export function BulkQuestionEntryModal({ open, onOpenChange }: BulkQuestionEntry
                 </div>
 
                 {/* Options Builder */}
+                {q.type !== 'Descriptive' && (
                 <div className="space-y-3 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex items-center justify-between">
                     <Label>Options & Correct Answer</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)}>
-                      <Plus className="h-3 w-3 mr-1" /> Add Option
-                    </Button>
+                    {q.type === 'Multiple Choice' && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)}>
+                        <Plus className="h-3 w-3 mr-1" /> Add Option
+                      </Button>
+                    )}
                   </div>
                   
                   {q.options?.map((opt, optIndex) => (
@@ -226,8 +243,9 @@ export function BulkQuestionEntryModal({ open, onOpenChange }: BulkQuestionEntry
                         onChange={(e) => updateOption(qIndex, optIndex, e.target.value)}
                         placeholder={`Option ${optIndex + 1}`} 
                         className={q.correctAnswer === optIndex ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : ''}
+                        readOnly={q.type === 'True/False'}
                       />
-                      {(q.options?.length || 0) > 2 && (
+                      {q.type === 'Multiple Choice' && (q.options?.length || 0) > 2 && (
                         <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(qIndex, optIndex)}>
                           <Trash2 className="h-4 w-4 text-slate-400" />
                         </Button>
@@ -235,6 +253,7 @@ export function BulkQuestionEntryModal({ open, onOpenChange }: BulkQuestionEntry
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             </div>
           ))}
