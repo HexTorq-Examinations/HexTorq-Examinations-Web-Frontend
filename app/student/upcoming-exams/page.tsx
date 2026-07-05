@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useExamStore } from '@/store/examStore';
-import { api } from '@/lib/api';
 
 export default function StudentUpcomingExams() {
   const router = useRouter();
@@ -18,16 +17,9 @@ export default function StudentUpcomingExams() {
   const [selectedExam, setSelectedExam] = useState<any>(null);
   const { myMappings, examHistory, fetchMyMappings, fetchExamHistory } = useExamStore();
 
-  const [notifications, setNotifications] = useState<any[]>([]);
-
   useEffect(() => {
     fetchMyMappings();
     fetchExamHistory();
-    let cancelled = false;
-    api.get('/messages/notifications')
-      .then(({ data }) => { if (!cancelled) setNotifications(data); })
-      .catch(() => {});
-    return () => { cancelled = true; };
   }, [fetchMyMappings, fetchExamHistory]);
 
   const upcomingExams = myMappings
@@ -64,7 +56,7 @@ export default function StudentUpcomingExams() {
     { title: 'Total Upcoming Exams', value: upcomingExams.length.toString(), icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
     { title: 'Next Exam Date', value: nextExamDate, icon: Calendar, color: 'text-emerald-600', bg: 'bg-emerald-100' },
     { title: 'Days Remaining', value: daysRemaining, icon: Clock, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { title: 'New Notifications', value: notifications.filter(n => n.unread).length.toString(), icon: Bell, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { title: 'New Notifications', value: '0', icon: Bell, color: 'text-amber-600', bg: 'bg-amber-100' },
   ];
 
   return (

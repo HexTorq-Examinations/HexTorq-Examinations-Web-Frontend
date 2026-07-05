@@ -1,43 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, PlayCircle, CheckCircle2, Bell, Clock, ChevronRight, FileText, Monitor, User, AlertCircle, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
-import { useAdminStore } from '@/store/adminStore';
 import { useExamStore } from '@/store/examStore';
 import { useMessagingStore } from '@/store/messagingStore';
-import { api } from '@/lib/api';
-
-const timeAgo = (iso: string) => {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins} min${mins > 1 ? 's' : ''} ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? 's' : ''} ago`;
-};
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();
   const { examHistory, fetchExamHistory, myMappings, fetchMyMappings } = useExamStore();
-  const { openPanel, openConversation } = useMessagingStore();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const { conversations, unreadTotal, fetchConversations, fetchUnreadTotal } = useMessagingStore();
 
   useEffect(() => {
     fetchMyMappings();
     fetchExamHistory();
-    let cancelled = false;
-    api.get('/messages/notifications')
-      .then(({ data }) => { if (!cancelled) setNotifications(data); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [fetchMyMappings, fetchExamHistory]);
+    fetchConversations();
+    fetchUnreadTotal();
+  }, [fetchMyMappings, fetchExamHistory, fetchConversations, fetchUnreadTotal]);
 
   const upcomingMappings = myMappings.filter(m => new Date(`${m.date}T${m.startTime}`) > new Date() && !(examHistory || []).some(h => h.examId === m.examId));
   // Sort upcoming by nearest date first
@@ -54,7 +37,7 @@ export default function StudentDashboard() {
     { title: 'Upcoming Exams', value: upcomingCount.toString(), icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-100' },
     { title: 'Active Exams', value: activeCount.toString(), icon: PlayCircle, color: 'text-emerald-600', bg: 'bg-emerald-100' },
     { title: 'Completed Exams', value: completedCount.toString(), icon: CheckCircle2, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { title: 'Notifications', value: notifications.filter(n => n.unread).length.toString(), icon: Bell, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { title: 'Notifications', value: unreadTotal.toString(), icon: Bell, color: 'text-amber-600', bg: 'bg-amber-100' },
   ];
 
   return (
@@ -164,18 +147,20 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {notifications.slice(0, 3).map(n => (
-                  <div key={n.id} className="p-4 flex gap-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer transition-colors" onClick={() => { openPanel(); openConversation(n.conversationId); }}>
-                    <div className={`mt-0.5 h-2 w-2 rounded-full ${n.unread ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'} shrink-0`}></div>
+                {conversations.filter(c => c.lastMessage).slice(0, 3).map((conv) => (
+                  <div key={conv.id} className="p-4 flex gap-4 hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <div className={`mt-0.5 h-2 w-2 rounded-full shrink-0 ${conv.unreadCount > 0 ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
                     <div>
-                      <h4 className="font-medium text-slate-900 dark:text-slate-100">{n.title}</h4>
-                      <p className="text-sm text-slate-500 mt-1 line-clamp-1">{n.description}</p>
-                      <span className="text-xs text-slate-400 mt-2 block">{timeAgo(n.time)}</span>
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100">{conv.name || conv.participants.map(p => p.name).join(', ')}</h4>
+                      <p className="text-sm text-slate-500 mt-1 line-clamp-1">{conv.lastMessage?.text}</p>
+                      <span className="text-xs text-slate-400 mt-2 block">{new Date(conv.lastMessage?.createdAt!).toLocaleString()}</span>
                     </div>
                   </div>
                 ))}
-                {notifications.length === 0 && (
-                  <div className="p-4 text-sm text-slate-500">No recent notifications.</div>
+                {conversations.filter(c => c.lastMessage).length === 0 && (
+                  <div className="p-4 text-sm text-slate-500">
+                    No recent notifications.
+                  </div>
                 )}
               </div>
             </CardContent>
