@@ -29,7 +29,19 @@ export function NetworkPing() {
     };
   }, []);
 
-  if (ping === null) return null;
+  if (ping === null) {
+    return (
+      <div 
+        className="fixed bottom-4 right-4 z-[9999] flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md"
+        title="Checking network..."
+      >
+        <Wifi className="w-3.5 h-3.5 text-slate-400 animate-pulse" />
+        <span className="text-xs font-mono font-medium text-slate-400 animate-pulse">
+          ...
+        </span>
+      </div>
+    );
+  }
 
   const getPingColor = () => {
     if (ping < 100) return 'text-emerald-500';
@@ -39,7 +51,7 @@ export function NetworkPing() {
 
   return (
     <div 
-      className="fixed bottom-4 left-4 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md"
+      className="fixed bottom-4 right-4 z-[9999] flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md"
       title={`Network Latency: ${ping}ms`}
     >
       <Wifi className={cn("w-3.5 h-3.5", getPingColor())} />
