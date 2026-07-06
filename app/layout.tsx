@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/providers/ThemeProvider';
 import QueryProvider from '@/providers/QueryProvider';
 import { ExamSyncProvider } from '@/providers/ExamSyncProvider';
 import { Toaster } from 'sonner';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -33,6 +34,7 @@ export default function RootLayout({
             <Toaster richColors position="top-right" />
           </QueryProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
