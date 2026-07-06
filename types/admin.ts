@@ -4,6 +4,7 @@ export const BatchSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Batch name is required'),
   createdAt: z.string().optional(),
+  schoolCount: z.coerce.number().optional(),
 });
 export type Batch = z.infer<typeof BatchSchema>;
 
@@ -12,6 +13,7 @@ export const SchoolSchema = z.object({
   name: z.string().min(1, 'School name is required'),
   batchId: z.string().min(1),
   createdAt: z.string().optional(),
+  departmentCount: z.coerce.number().optional(),
 });
 export type School = z.infer<typeof SchoolSchema>;
 
@@ -20,6 +22,7 @@ export const DepartmentSchema = z.object({
   name: z.string().min(1, 'Department name is required'),
   schoolId: z.string().min(1),
   createdAt: z.string().optional(),
+  classCount: z.coerce.number().optional(),
 });
 export type Department = z.infer<typeof DepartmentSchema>;
 

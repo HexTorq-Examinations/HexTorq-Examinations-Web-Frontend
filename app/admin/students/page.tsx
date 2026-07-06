@@ -146,6 +146,7 @@ export default function AdminStudents() {
       ) : level === 'schools' && (
         <HierarchyGrid
           itemLabel="School"
+          childLabel="department"
           items={schools}
           isLoading={isLoading}
           emptyDescription="Create a school under this batch to get started."
@@ -159,6 +160,7 @@ export default function AdminStudents() {
       {level === 'departments' && selectedSchoolId && (
         <HierarchyGrid
           itemLabel="Department"
+          childLabel="class"
           items={departments}
           isLoading={isLoading}
           emptyDescription="Create a department under this school to get started."

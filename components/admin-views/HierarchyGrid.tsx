@@ -19,10 +19,15 @@ interface HierarchyItem {
   id?: string;
   name: string;
   studentCount?: number;
+  schoolCount?: number;
+  departmentCount?: number;
+  classCount?: number;
 }
 
 interface HierarchyGridProps {
   itemLabel: string;
+  /** Singular label for the child entity these cards count (e.g. "school", "department", "class", "student"). */
+  childLabel?: string;
   items: HierarchyItem[];
   isLoading: boolean;
   emptyDescription: string;
@@ -32,7 +37,10 @@ interface HierarchyGridProps {
   onDelete: (id: string) => Promise<void>;
 }
 
-export function HierarchyGrid({ itemLabel, items, isLoading, emptyDescription, onSelect, onAdd, onEdit, onDelete }: HierarchyGridProps) {
+const getChildCount = (item: HierarchyItem): number | undefined =>
+  item.schoolCount ?? item.departmentCount ?? item.classCount ?? item.studentCount;
+
+export function HierarchyGrid({ itemLabel, childLabel = 'student', items, isLoading, emptyDescription, onSelect, onAdd, onEdit, onDelete }: HierarchyGridProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<HierarchyItem | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -87,7 +95,9 @@ export function HierarchyGrid({ itemLabel, items, isLoading, emptyDescription, o
         </div>
       ) : items.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {items.map((item) => (
+          {items.map((item) => {
+            const childCount = getChildCount(item);
+            return (
             <Card
               key={item.id}
               onClick={() => item.id && onSelect(item.id)}
@@ -99,8 +109,8 @@ export function HierarchyGrid({ itemLabel, items, isLoading, emptyDescription, o
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{item.name}</p>
-                  {item.studentCount !== undefined && (
-                    <p className="text-xs text-slate-500">{item.studentCount} student{item.studentCount === 1 ? '' : 's'}</p>
+                  {childCount !== undefined && (
+                    <p className="text-xs text-slate-500">{childCount} {childLabel}{childCount === 1 ? '' : 's'}</p>
                   )}
                 </div>
                 <DropdownMenu>
@@ -123,7 +133,8 @@ export function HierarchyGrid({ itemLabel, items, isLoading, emptyDescription, o
                 <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-700 shrink-0" />
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <EmptyState
