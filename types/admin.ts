@@ -128,5 +128,19 @@ export const ResultSchema = z.object({
   totalStudents: z.coerce.number(),
   publishedDate: z.string(),
   status: z.enum(['Published', 'Pending Evaluation', 'In Progress']),
+  mappingSummaries: z.array(z.object({
+    mappingId: z.string(),
+    classId: z.string(),
+    className: z.string(),
+    assignedStudents: z.coerce.number(),
+    evaluated: z.coerce.number(),
+    completed: z.coerce.number(),
+    terminated: z.coerce.number(),
+    active: z.coerce.number(),
+    averageScorePercent: z.coerce.number(),
+    passRate: z.coerce.number(),
+    startTime: z.string().optional(),
+    endTime: z.string().optional(),
+  })).optional(),
 });
 export type Result = z.infer<typeof ResultSchema>;

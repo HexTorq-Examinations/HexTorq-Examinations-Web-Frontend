@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileBarChart, Trophy, TrendingUp, AlertTriangle, CheckCircle, Download, Eye, Share2 } from 'lucide-react';
+import { FileBarChart, Trophy, TrendingUp, AlertTriangle, Download, Eye, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -14,12 +14,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { 
   BarChart, 
   Bar, 
@@ -53,7 +47,7 @@ interface ResultsAnalytics {
   gradeDistribution: { name: string; value: number; color: string }[];
 }
 
-interface AttemptSummary { id: string; studentName: string; registerNumber?: string; status: string; score: number; violationsCount: number; }
+interface AttemptSummary { id: string; studentName: string; registerNumber?: string; classId?: string; className?: string; status: string; score: number; violationsCount: number; }
 interface AttemptDetail extends AttemptSummary {
   exam: { title: string; totalMarks: number };
   student: { name: string; registerNumber?: string };
@@ -79,6 +73,7 @@ export function ResultsView({ role }: ResultsViewProps) {
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
   const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
   const [attemptsOpen, setAttemptsOpen] = useState(false);
+  const [attemptsTitle, setAttemptsTitle] = useState('Student Attempts');
   const [attemptDetail, setAttemptDetail] = useState<AttemptDetail | null>(null);
 
   useEffect(() => {
@@ -87,7 +82,6 @@ export function ResultsView({ role }: ResultsViewProps) {
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoadingAnalytics(true);
     api.get('/results/analytics')
       .then(({ data }) => { if (!cancelled) setAnalytics(data); })
       .finally(() => { if (!cancelled) setIsLoadingAnalytics(false); });
@@ -104,9 +98,10 @@ export function ResultsView({ role }: ResultsViewProps) {
     });
   };
 
-  const openAttempts = async (examId: string) => {
-    const { data } = await api.get('/results/attempts', { params: { examId } });
+  const openAttempts = async (examId: string, classId?: string, title = 'Student Attempts') => {
+    const { data } = await api.get('/results/attempts', { params: { examId, classId } });
     setAttempts(data);
+    setAttemptsTitle(title);
     setAttemptsOpen(true);
   };
 
@@ -304,50 +299,83 @@ export function ResultsView({ role }: ResultsViewProps) {
               </TableHeader>
               <TableBody>
                 {currentResults.map((result) => (
-                  <TableRow key={result.id} className="border-slate-200 dark:border-slate-800 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100">{result.examName}{result.isTestExam && <Badge className="bg-amber-100 text-amber-700">TEST</Badge>}</span>
-                        <span className="text-xs text-slate-500">ID: {result.examId}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-slate-600 dark:text-slate-400 font-medium">
-                      {result.totalStudents} Evaluated
-                    </TableCell>
-                    <TableCell className="text-slate-600 dark:text-slate-400">
-                      {result.status === 'Published' ? new Date(result.publishedDate).toLocaleDateString() : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="secondary"
-                        className={`
-                          ${result.status === 'Published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : ''}
-                          ${result.status === 'Pending Evaluation' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' : ''}
-                          ${result.status === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' : ''}
-                          font-medium border-0
-                        `}
-                      >
-                        {result.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openAttempts(result.examId)}><Eye className="w-4 h-4 mr-1" /> Attempts</Button>
-                        <Button variant="outline" size="sm" onClick={() => download(`/results/${result.id}/export.csv`, `${result.examName}.csv`)}><Download className="w-4 h-4" /></Button>
-                      {result.status === 'Pending Evaluation' ? (
-                        <Button 
-                          size="sm" 
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={() => publishResult(result.id!)}
-                          disabled={isLoading || !result.canPublish}
-                          title={result.publishBlockedReason || 'Publish result'}
+                  <React.Fragment key={result.id}>
+                    <TableRow className="border-slate-200 dark:border-slate-800 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100">{result.examName}{result.isTestExam && <Badge className="bg-amber-100 text-amber-700">TEST</Badge>}</span>
+                          <span className="text-xs text-slate-500">ID: {result.examId}</span>
+                          {!!result.mappingSummaries?.length && <span className="mt-1 text-xs text-blue-600">{result.mappingSummaries.length} mapped class{result.mappingSummaries.length > 1 ? 'es' : ''}</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-400 font-medium">
+                        {result.totalStudents} Evaluated
+                      </TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-400">
+                        {result.status === 'Published' ? new Date(result.publishedDate).toLocaleDateString() : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="secondary"
+                          className={`
+                            ${result.status === 'Published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : ''}
+                            ${result.status === 'Pending Evaluation' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' : ''}
+                            ${result.status === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' : ''}
+                            font-medium border-0
+                          `}
                         >
-                          <Share2 className="w-4 h-4 mr-1.5" /> {result.canPublish ? 'Publish' : 'Exam not ended'}
-                        </Button>
-                      ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                          {result.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openAttempts(result.examId, undefined, `${result.examName} — All Attempts`)}><Eye className="w-4 h-4 mr-1" /> All Attempts</Button>
+                          <Button variant="outline" size="sm" onClick={() => download(`/results/${result.id}/export.csv`, `${result.examName}.csv`)}><Download className="w-4 h-4" /></Button>
+                        {result.status === 'Pending Evaluation' ? (
+                          <Button 
+                            size="sm" 
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => publishResult(result.id!)}
+                            disabled={isLoading || !result.canPublish}
+                            title={result.publishBlockedReason || 'Publish result'}
+                          >
+                            <Share2 className="w-4 h-4 mr-1.5" /> {result.canPublish ? 'Publish' : 'Exam not ended'}
+                          </Button>
+                        ) : null}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {!!result.mappingSummaries?.length && (
+                      <TableRow className="bg-slate-50/70 dark:bg-slate-900/40 hover:bg-slate-50/70">
+                        <TableCell colSpan={5} className="p-0">
+                          <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+                            {result.mappingSummaries.map((mapping) => (
+                              <button
+                                key={mapping.mappingId}
+                                type="button"
+                                onClick={() => openAttempts(result.examId, mapping.classId, `${result.examName} — ${mapping.className}`)}
+                                className="rounded-xl border bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:bg-slate-950"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-semibold text-slate-900 dark:text-slate-100">{mapping.className}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{mapping.startTime || '-'} - {mapping.endTime || '-'} · {mapping.assignedStudents} assigned</p>
+                                  </div>
+                                  {mapping.active > 0 && <Badge className="bg-blue-100 text-blue-700">{mapping.active} active</Badge>}
+                                </div>
+                                <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
+                                  <div><p className="text-slate-500">Evaluated</p><p className="mt-1 font-bold">{mapping.evaluated}</p></div>
+                                  <div><p className="text-slate-500">Avg</p><p className="mt-1 font-bold">{mapping.averageScorePercent}%</p></div>
+                                  <div><p className="text-slate-500">Pass</p><p className="mt-1 font-bold">{mapping.passRate}%</p></div>
+                                </div>
+                                <p className="mt-3 text-xs text-blue-600">View class attempts</p>
+                              </button>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
@@ -371,8 +399,8 @@ export function ResultsView({ role }: ResultsViewProps) {
 
       <Dialog open={attemptsOpen} onOpenChange={setAttemptsOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Student Attempts</DialogTitle></DialogHeader>
-          <div className="space-y-2">{attempts.map((attempt) => <button key={attempt.id} onClick={() => openAttempt(attempt.id)} className="w-full border rounded-lg p-3 flex justify-between text-left hover:bg-slate-50"><span><b>{attempt.studentName}</b><br/><span className="text-xs text-slate-500">{attempt.registerNumber} · {attempt.violationsCount} violations</span></span><span>{attempt.score} · {attempt.status}</span></button>)}</div>
+          <DialogHeader><DialogTitle>{attemptsTitle}</DialogTitle></DialogHeader>
+          <div className="space-y-2">{attempts.map((attempt) => <button key={attempt.id} onClick={() => openAttempt(attempt.id)} className="w-full border rounded-lg p-3 flex justify-between text-left hover:bg-slate-50"><span><b>{attempt.studentName}</b><br/><span className="text-xs text-slate-500">{attempt.registerNumber} · {attempt.className || 'Class'} · {attempt.violationsCount} violations</span></span><span>{attempt.score} · {attempt.status}</span></button>)}</div>
         </DialogContent>
       </Dialog>
 
