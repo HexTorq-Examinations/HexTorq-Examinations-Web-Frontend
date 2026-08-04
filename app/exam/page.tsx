@@ -14,12 +14,19 @@ import { NetworkPing } from '@/components/common/NetworkPing';
 import { FloatingCalculator } from '@/components/common/FloatingCalculator';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { sanitizeQuestionOptions } from '@/lib/questionOptions';
+import { CodeQuestionPanel } from '@/components/common/CodeQuestionPanel';
 
 interface ExamQuestion {
   id: string;
   text: string;
   options: string[];
+  type?: string;
+  starterCode?: string;
 }
+
+// Types with no fixed option list — students type a free-text answer instead.
+// Unknown/missing `type` (older in-flight attempts) falls back to the option list.
+const FREE_TEXT_TYPES = new Set(['Descriptive', 'Fill in the Blank', 'Coding']);
 
 interface RuntimeControls {
   strictFullscreen: boolean;
@@ -50,6 +57,7 @@ function SecureExamInterface() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [showPendingWarning, setShowPendingWarning] = useState(false);
+  const [codingEvaluation, setCodingEvaluation] = useState<{ status: string; totalQuestions: number; evaluatedQuestions: number } | null>(null);
 
   // Clear session if opening a different exam
   useEffect(() => {
@@ -158,6 +166,33 @@ function SecureExamInterface() {
       }
     }
   }, [violationsCount, lastViolationCount, hasExceededViolations, isTerminated, endExam]);
+
+  // After submission, poll for background code-evaluation progress if this
+  // exam has Coding questions — final scoring for those completes async.
+  useEffect(() => {
+    if (status !== 'COMPLETED' && status !== 'TERMINATED') return;
+    if (!currentExamId) return;
+    if (!questions.some((q) => q.type === 'Coding')) return;
+
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const poll = () => {
+      api.get(`/exams/${currentExamId}/my-attempt`)
+        .then(({ data }) => {
+          if (cancelled) return;
+          const evaluation = data?.codingEvaluation || null;
+          setCodingEvaluation(evaluation);
+          if (evaluation?.status === 'DONE' && interval) {
+            clearInterval(interval);
+            interval = null;
+          }
+        })
+        .catch(() => {});
+    };
+    poll();
+    interval = setInterval(poll, 4000);
+    return () => { cancelled = true; if (interval) clearInterval(interval); };
+  }, [status, currentExamId, questions]);
 
   // Format time
   const formatTime = (seconds: number) => {
@@ -293,6 +328,12 @@ function SecureExamInterface() {
               <Button size="sm" variant="outline" className="mt-3" onClick={() => flushPending()}>Retry synchronization</Button>
             </div>
           )}
+          {codingEvaluation && codingEvaluation.status !== 'DONE' && (
+            <div className="mb-6 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm flex items-center justify-center gap-2">
+              <span className="h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
+              Evaluating your code answers... {codingEvaluation.evaluatedQuestions}/{codingEvaluation.totalQuestions} done
+            </div>
+          )}
           {submissionReceipt && !pendingSubmitStatus && (
             <dl className="mb-6 rounded-lg border bg-slate-50 p-4 text-left text-sm" aria-label="Server submission receipt">
               <div className="flex justify-between gap-4"><dt className="text-slate-500">Attempt ID</dt><dd className="font-mono break-all text-right">{submissionReceipt.attemptId}</dd></div>
@@ -425,28 +466,46 @@ function SecureExamInterface() {
           <Card className="flex-1 p-4 md:p-8 shadow-sm border-slate-200 bg-white">
             <p className="text-base md:text-lg text-slate-800 leading-relaxed mb-6 md:mb-8">{currentQuestion.text}</p>
 
-            <div className="space-y-3">
-              {currentQuestion.options.map((opt, i) => {
-                const isSelected = answers[currentQuestion.id] === opt;
-                return (
-                  <label
-                    key={i}
-                    className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
-                      isSelected ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={currentQuestion.id}
-                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-600"
-                      checked={isSelected}
-                      onChange={() => saveAnswer(currentQuestion.id, opt)}
-                    />
-                    <span className="ml-3 text-slate-700 font-medium">{opt}</span>
-                  </label>
-                );
-              })}
-            </div>
+            {currentQuestion.type === 'Coding' ? (
+              <CodeQuestionPanel
+                key={currentQuestion.id}
+                examId={currentExamId}
+                questionId={currentQuestion.id}
+                initialCode={answers[currentQuestion.id] || currentQuestion.starterCode || ''}
+                onCodeChange={(code) => saveAnswer(currentQuestion.id, code)}
+              />
+            ) : FREE_TEXT_TYPES.has(currentQuestion.type || '') ? (
+              <textarea
+                key={currentQuestion.id}
+                defaultValue={answers[currentQuestion.id] || ''}
+                onBlur={(e) => saveAnswer(currentQuestion.id, e.target.value)}
+                placeholder={currentQuestion.type === 'Fill in the Blank' ? 'Type your answer...' : 'Type your answer here...'}
+                className="w-full min-h-[140px] rounded-lg border border-slate-200 p-4 text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
+            ) : (
+              <div className="space-y-3">
+                {currentQuestion.options.map((opt, i) => {
+                  const isSelected = answers[currentQuestion.id] === opt;
+                  return (
+                    <label
+                      key={i}
+                      className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
+                        isSelected ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={currentQuestion.id}
+                        className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-600"
+                        checked={isSelected}
+                        onChange={() => saveAnswer(currentQuestion.id, opt)}
+                      />
+                      <span className="ml-3 text-slate-700 font-medium">{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </Card>
 
           {/* Navigation Footer */}

@@ -62,12 +62,39 @@ export function BulkQuestionEntryModal({ open, onOpenChange, examId }: BulkQuest
       } else if (value === 'Descriptive') {
         newQ.options = [];
         newQ.correctAnswer = 0;
+      } else if (value === 'Fill in the Blank') {
+        newQ.options = [''];
+        newQ.correctAnswer = 0;
+      } else if (value === 'Coding') {
+        newQ.options = [];
+        newQ.correctAnswer = 0;
+        if (!newQ.testCases?.length) newQ.testCases = [{ input: '', expectedOutput: '' }];
       } else if (value === 'Multiple Choice' && (!newQ.options || newQ.options.length < 2)) {
         newQ.options = ['', '', '', ''];
       }
     }
-    
+
     updated[index] = newQ;
+    setQuestions(updated);
+  };
+
+  const updateTestCase = (qIndex: number, tcIndex: number, field: 'input' | 'expectedOutput', value: string) => {
+    const updated = [...questions];
+    const testCases = [...(updated[qIndex].testCases || [])];
+    testCases[tcIndex] = { ...testCases[tcIndex], [field]: value };
+    updated[qIndex].testCases = testCases;
+    setQuestions(updated);
+  };
+
+  const addTestCase = (qIndex: number) => {
+    const updated = [...questions];
+    updated[qIndex].testCases = [...(updated[qIndex].testCases || []), { input: '', expectedOutput: '' }];
+    setQuestions(updated);
+  };
+
+  const removeTestCase = (qIndex: number, tcIndex: number) => {
+    const updated = [...questions];
+    updated[qIndex].testCases = (updated[qIndex].testCases || []).filter((_, i) => i !== tcIndex);
     setQuestions(updated);
   };
 
@@ -193,6 +220,8 @@ export function BulkQuestionEntryModal({ open, onOpenChange, examId }: BulkQuest
                       <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
                       <SelectItem value="True/False">True/False</SelectItem>
                       <SelectItem value="Descriptive">Descriptive</SelectItem>
+                      <SelectItem value="Fill in the Blank">Fill in the Blank</SelectItem>
+                      <SelectItem value="Coding">Coding (Java)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -219,7 +248,55 @@ export function BulkQuestionEntryModal({ open, onOpenChange, examId }: BulkQuest
                 </div>
 
                 {/* Options Builder */}
-                {q.type !== 'Descriptive' && (
+                {q.type === 'Coding' && (
+                <div className="space-y-3 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <Label>Starter Code (Optional)</Label>
+                  <textarea
+                    value={q.starterCode || ''}
+                    onChange={(e) => updateQuestion(qIndex, 'starterCode', e.target.value)}
+                    className="w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-950 text-slate-100 px-3 py-2 font-mono text-xs"
+                    placeholder={'public class Main {\n  public static void main(String[] args) {\n  }\n}'}
+                  />
+                  <div className="flex items-center justify-between">
+                    <Label>Test Cases (stdin → expected stdout)</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={() => addTestCase(qIndex)}>
+                      <Plus className="h-3 w-3 mr-1" /> Add Test Case
+                    </Button>
+                  </div>
+                  {(q.testCases || []).map((tc, tcIndex) => (
+                    <div key={tcIndex} className="flex items-start gap-3">
+                      <textarea
+                        value={tc.input}
+                        onChange={(e) => updateTestCase(qIndex, tcIndex, 'input', e.target.value)}
+                        placeholder={`Input ${tcIndex + 1}`}
+                        className="flex-1 min-h-[50px] rounded-md border border-slate-200 px-2 py-1 font-mono text-xs"
+                      />
+                      <textarea
+                        value={tc.expectedOutput}
+                        onChange={(e) => updateTestCase(qIndex, tcIndex, 'expectedOutput', e.target.value)}
+                        placeholder={`Expected Output ${tcIndex + 1}`}
+                        className="flex-1 min-h-[50px] rounded-md border border-slate-200 px-2 py-1 font-mono text-xs"
+                      />
+                      {(q.testCases?.length || 0) > 1 && (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeTestCase(qIndex, tcIndex)}>
+                          <Trash2 className="h-4 w-4 text-slate-400" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                )}
+                {q.type === 'Fill in the Blank' && (
+                <div className="space-y-2 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <Label>Accepted Answer *</Label>
+                  <Input
+                    value={q.options?.[0] || ''}
+                    onChange={(e) => updateOption(qIndex, 0, e.target.value)}
+                    placeholder="e.g., Jupiter"
+                  />
+                </div>
+                )}
+                {q.type !== 'Descriptive' && q.type !== 'Fill in the Blank' && q.type !== 'Coding' && (
                 <div className="space-y-3 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex items-center justify-between">
                     <Label>Options & Correct Answer</Label>
@@ -229,7 +306,7 @@ export function BulkQuestionEntryModal({ open, onOpenChange, examId }: BulkQuest
                       </Button>
                     )}
                   </div>
-                  
+
                   {q.options?.map((opt, optIndex) => (
                     <div key={optIndex} className="flex items-center gap-3">
                       <input 

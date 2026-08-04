@@ -12,8 +12,11 @@ export interface PreviewExam {
   subject: string;
   duration: number;
   totalMarks: number;
-  questions: { id: string; text: string; options: string[]; marks: number }[];
+  questions: { id: string; text: string; options: string[]; marks: number; type?: string }[];
 }
+
+// Types with no fixed option list — students type a free-text answer instead.
+const FREE_TEXT_TYPES = new Set(['Descriptive', 'Fill in the Blank']);
 
 export function StudentExamPreview({ exam, onClose }: { exam: PreviewExam; onClose: () => void }) {
   const [index, setIndex] = useState(0);
@@ -49,13 +52,27 @@ export function StudentExamPreview({ exam, onClose }: { exam: PreviewExam; onClo
         </div>
         <fieldset className="flex-1">
           <legend className="mb-6 text-lg font-semibold leading-relaxed md:text-xl">{question.text}</legend>
-          <div className="space-y-3">{question.options.map((option, optionIndex) => {
-            const selected = answers[question.id] === option;
-            return <label key={optionIndex} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${selected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'hover:bg-slate-50'}`}>
-              <input type="radio" name={`preview-${question.id}`} checked={selected} onChange={() => setAnswers({ ...answers, [question.id]: option })} className="mt-1" />
-              <span><strong className="mr-2">{String.fromCharCode(65 + optionIndex)}.</strong>{option}</span>
-            </label>;
-          })}</div>
+          {question.type === 'Coding' ? (
+            <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+              Coding questions run in a live sandboxed environment and can't be tested from this preview.
+            </div>
+          ) : FREE_TEXT_TYPES.has(question.type || '') ? (
+            <textarea
+              key={question.id}
+              defaultValue={answers[question.id] || ''}
+              onBlur={(e) => setAnswers({ ...answers, [question.id]: e.target.value })}
+              placeholder="Type your answer here..."
+              className="w-full min-h-[140px] rounded-lg border p-4 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            />
+          ) : (
+            <div className="space-y-3">{question.options.map((option, optionIndex) => {
+              const selected = answers[question.id] === option;
+              return <label key={optionIndex} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${selected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'hover:bg-slate-50'}`}>
+                <input type="radio" name={`preview-${question.id}`} checked={selected} onChange={() => setAnswers({ ...answers, [question.id]: option })} className="mt-1" />
+                <span><strong className="mr-2">{String.fromCharCode(65 + optionIndex)}.</strong>{option}</span>
+              </label>;
+            })}</div>
+          )}
         </fieldset>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
           <Button variant="outline" onClick={() => setIndex(value => value - 1)} disabled={index === 0}><ChevronLeft className="mr-2 h-4 w-4" />Previous</Button>

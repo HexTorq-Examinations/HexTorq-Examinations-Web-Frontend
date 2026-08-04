@@ -54,12 +54,14 @@ export const QuestionSchema = z.object({
   id: z.string().optional(),
   text: z.string().min(5, 'Question text is required'),
   subject: z.string().min(2, 'Subject is required'),
-  type: z.enum(['Multiple Choice', 'True/False', 'Descriptive']).default('Multiple Choice'),
+  type: z.enum(['Multiple Choice', 'True/False', 'Descriptive', 'Fill in the Blank', 'Coding']).default('Multiple Choice'),
   difficulty: z.enum(['Easy', 'Medium', 'Hard']).default('Medium'),
   marks: z.coerce.number().min(1, 'Marks must be at least 1'),
   options: z.array(z.string()).default([]),
   correctAnswer: z.coerce.number().default(0),
   explanation: z.string().optional(),
+  starterCode: z.string().optional(),
+  testCases: z.array(z.object({ input: z.string(), expectedOutput: z.string() })).optional(),
   examId: z.string().optional(),
 });
 export type Question = z.infer<typeof QuestionSchema>;

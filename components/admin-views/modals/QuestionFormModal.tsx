@@ -37,6 +37,11 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit, examId }
   const watchAnswer = watch('correctAnswer');
   const watchType = watch('type');
 
+  const { fields: testCaseFields, append: appendTestCase, remove: removeTestCase } = useFieldArray({
+    control,
+    name: 'testCases',
+  });
+
   const appendOption = () => {
     setValue('options', [...watchOptions, '']);
   };
@@ -72,6 +77,13 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit, examId }
     } else if (watchType === 'Descriptive') {
       setValue('options', []);
       setValue('correctAnswer', 0);
+    } else if (watchType === 'Fill in the Blank') {
+      if (watchOptions.length !== 1) setValue('options', ['']);
+      setValue('correctAnswer', 0);
+    } else if (watchType === 'Coding') {
+      setValue('options', []);
+      setValue('correctAnswer', 0);
+      if (!watch('testCases')?.length) setValue('testCases', [{ input: '', expectedOutput: '' }]);
     } else if (watchType === 'Multiple Choice' && watchOptions.length < 2) {
       setValue('options', ['', '', '', '']);
     }
@@ -143,6 +155,8 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit, examId }
                   <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
                   <SelectItem value="True/False">True/False</SelectItem>
                   <SelectItem value="Descriptive">Descriptive</SelectItem>
+                  <SelectItem value="Fill in the Blank">Fill in the Blank</SelectItem>
+                  <SelectItem value="Coding">Coding (Java)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -171,7 +185,67 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit, examId }
             </div>
 
             {/* Options Builder */}
-            {watchType !== 'Descriptive' && (
+            {watchType === 'Coding' && (
+            <div className="space-y-4 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="space-y-2">
+                <Label htmlFor="starterCode">Starter Code (Optional)</Label>
+                <textarea
+                  id="starterCode"
+                  {...register('starterCode')}
+                  className="w-full flex min-h-[120px] rounded-md border border-slate-200 bg-slate-950 text-slate-100 px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+                  placeholder={'public class Main {\n  public static void main(String[] args) {\n    // your code here\n  }\n}'}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm">Test Cases (stdin → expected stdout)</h4>
+                <Button type="button" variant="outline" size="sm" onClick={() => appendTestCase({ input: '', expectedOutput: '' })}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Test Case
+                </Button>
+              </div>
+              {errors.testCases && <p className="text-red-500 text-xs">{(errors.testCases as any).message || 'Test cases are required'}</p>}
+              <div className="space-y-3">
+                {testCaseFields.map((field, index) => (
+                  <div key={field.id} className="flex items-start gap-3 p-3 rounded-md border border-slate-100 dark:border-slate-800">
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs">Input {index + 1}</Label>
+                      <textarea
+                        {...register(`testCases.${index}.input` as const)}
+                        className="w-full min-h-[60px] rounded-md border border-slate-200 px-2 py-1 font-mono text-xs"
+                        placeholder="stdin for this test case (optional)"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs">Expected Output {index + 1} *</Label>
+                      <textarea
+                        {...register(`testCases.${index}.expectedOutput` as const)}
+                        className="w-full min-h-[60px] rounded-md border border-slate-200 px-2 py-1 font-mono text-xs"
+                        placeholder="Exact expected stdout"
+                      />
+                    </div>
+                    {testCaseFields.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeTestCase(index)}>
+                        <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            )}
+            {watchType === 'Fill in the Blank' && (
+            <div className="space-y-2 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Label htmlFor="fib-answer">Accepted Answer *</Label>
+              <Input
+                id="fib-answer"
+                {...register('options.0' as const)}
+                placeholder="e.g., Jupiter"
+              />
+              <p className="text-xs text-slate-500">Matched against the student's typed answer, ignoring case and extra spaces.</p>
+              {errors.options && <p className="text-red-500 text-xs">{errors.options.message}</p>}
+            </div>
+            )}
+            {watchType !== 'Descriptive' && watchType !== 'Fill in the Blank' && watchType !== 'Coding' && (
             <div className="space-y-4 col-span-1 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-sm">Options & Answer</h4>
@@ -181,23 +255,23 @@ export function QuestionFormModal({ open, onOpenChange, questionToEdit, examId }
                   </Button>
                 )}
               </div>
-              
+
               {errors.options && <p className="text-red-500 text-xs">{errors.options.message}</p>}
-              
+
               <div className="space-y-3">
                 {watchOptions.map((_, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <input 
-                      type="radio" 
-                      name="correctAnswerGroup" 
+                    <input
+                      type="radio"
+                      name="correctAnswerGroup"
                       checked={Number(watchAnswer) === index}
                       onChange={() => setValue('correctAnswer', index)}
                       className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                     />
                     <div className="flex-1">
-                      <Input 
-                        {...register(`options.${index}` as const)} 
-                        placeholder={`Option ${index + 1}`} 
+                      <Input
+                        {...register(`options.${index}` as const)}
+                        placeholder={`Option ${index + 1}`}
                         className={Number(watchAnswer) === index ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : ''}
                         readOnly={watchType === 'True/False'}
                       />
