@@ -215,7 +215,7 @@ export function BulkQuestionEntryModal({ open, onOpenChange, examId }: BulkQuest
                 <div className="space-y-2">
                   <Label>Type</Label>
                   <Select value={q.type} onValueChange={(val) => updateQuestion(qIndex, 'type', val)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
                       <SelectItem value="True/False">True/False</SelectItem>
@@ -229,7 +229,7 @@ export function BulkQuestionEntryModal({ open, onOpenChange, examId }: BulkQuest
                 <div className="space-y-2">
                   <Label>Difficulty</Label>
                   <Select value={q.difficulty} onValueChange={(val) => updateQuestion(qIndex, 'difficulty', val)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Easy">Easy</SelectItem>
                       <SelectItem value="Medium">Medium</SelectItem>

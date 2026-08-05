@@ -376,8 +376,8 @@ function SecureExamInterface() {
       {/* Top Security & Info Bar */}
       <header className="h-14 bg-[#1E3A8A] text-white flex items-center justify-between px-4 md:px-6 shadow-md z-10 shrink-0">
         <div className="flex items-center gap-2 md:gap-6">
-          <span className="font-bold text-sm md:text-lg tracking-wide hidden sm:block">Enterprise Assessment</span>
-          <span className="font-bold text-sm tracking-wide sm:hidden">EA</span>
+          <span className="font-bold text-sm md:text-lg tracking-wide hidden sm:block">HexTorq Exams</span>
+          <span className="font-bold text-sm tracking-wide sm:hidden">HX</span>
           <div className="hidden md:block h-4 w-px bg-white/20"></div>
           <div className="hidden md:flex items-center gap-4 text-sm font-medium">
             {runtimeControls.strictFullscreen && <span className="flex items-center gap-1.5"><Monitor className="w-4 h-4 text-green-400" /> Fullscreen</span>}

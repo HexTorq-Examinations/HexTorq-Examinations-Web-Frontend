@@ -181,14 +181,14 @@ export function StudentsView({ role, classId, className, onBack, breadcrumbs }: 
             <div className="w-full sm:w-56">
               <label className="mb-2 block text-sm font-medium" htmlFor="student-status-filter">Status</label>
               <Select value={statusFilter} onValueChange={value => value && setStatusFilter(value)}>
-                <SelectTrigger id="student-status-filter"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="student-status-filter"><SelectValue placeholder="Select status" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem><SelectItem value="Suspended">Suspended</SelectItem></SelectContent>
               </Select>
             </div>
             <div className="w-full sm:w-64">
               <label className="mb-2 block text-sm font-medium" htmlFor="student-accommodation-filter">Accommodation</label>
               <Select value={accommodationFilter} onValueChange={value => value && setAccommodationFilter(value)}>
-                <SelectTrigger id="student-accommodation-filter"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="student-accommodation-filter"><SelectValue placeholder="Select accommodation" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All students</SelectItem><SelectItem value="yes">Has accommodation</SelectItem><SelectItem value="no">No accommodation</SelectItem></SelectContent>
               </Select>
             </div>

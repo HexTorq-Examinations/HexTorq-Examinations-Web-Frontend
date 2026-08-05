@@ -70,11 +70,11 @@ export default function LoginPage() {
               <Hexagon className="text-white w-8 h-8 fill-white/10" strokeWidth={1.5} />
             </motion.div>
             <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-br from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-              HexTorq OS
+              HexTorq Exams
             </h1>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              Enterprise Assessment Platform
+              Online Examination Platform
             </p>
           </div>
 

@@ -9,8 +9,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Enterprise Assessment Platform',
-  description: 'Enterprise Online Assessment Platform for Super Admins, Admins, and Students.',
+  title: 'HexTorq Exams',
+  description: 'HexTorq Exams — Online Examination Platform for Super Admins, Admins, and Students.',
 };
 
 export default function RootLayout({

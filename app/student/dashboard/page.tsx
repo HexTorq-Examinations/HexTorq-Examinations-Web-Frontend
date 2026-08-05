@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useExamStore } from '@/store/examStore';
 import { useMessagingStore } from '@/store/messagingStore';
 import { getTemporalStatus, hasCompletedMapping } from '@/lib/examMappingStatus';
+import { useServerClock } from '@/hooks/useServerClock';
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();
@@ -23,7 +24,10 @@ export default function StudentDashboard() {
     fetchUnreadTotal();
   }, [fetchMyMappings, fetchExamHistory, fetchConversations, fetchUnreadTotal]);
 
-  const now = new Date();
+  // Server-synced clock — a student's device clock being wrong/skewed must
+  // never hide an exam that's actually active (or show one that isn't).
+  const serverNow = useServerClock();
+  const now = serverNow ?? new Date();
   const liveMappings = myMappings.filter((m) => !hasCompletedMapping(m, examHistory));
 
   const upcomingMappings = liveMappings.filter((m) => getTemporalStatus(m, now) === 'upcoming');

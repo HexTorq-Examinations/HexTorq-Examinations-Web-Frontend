@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useExamStore } from '@/store/examStore';
 import { api } from '@/lib/api';
 import { getTemporalStatus, hasCompletedMapping } from '@/lib/examMappingStatus';
+import { useServerClock } from '@/hooks/useServerClock';
 import { Badge } from '@/components/ui/badge';
 
 interface AttemptStatus {
@@ -29,7 +30,10 @@ export default function StudentActiveExams() {
     fetchExamHistory();
   }, [fetchMyMappings, fetchExamHistory]);
 
-  const now = new Date();
+  // Server-synced clock — a student's device clock being wrong/skewed must
+  // never hide an exam that's actually active (or show one that isn't).
+  const serverNow = useServerClock();
+  const now = serverNow ?? new Date();
   const activeMappings = myMappings.filter(
     (m) => getTemporalStatus(m, now) === 'active' && !hasCompletedMapping(m, examHistory)
   );

@@ -151,7 +151,7 @@ export function FileImportQuestionsModal({ open, onOpenChange, examId, defaultSu
               <Label>Default Difficulty</Label>
               <Select value={difficulty} onValueChange={(val) => setDifficulty(val || 'Medium')}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select difficulty" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Easy">Easy</SelectItem>

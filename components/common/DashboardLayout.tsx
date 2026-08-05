@@ -131,7 +131,7 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
         <div className="h-[72px] flex items-center px-4 border-b border-slate-200 dark:border-slate-800 justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-inner shadow-blue-400">
-              <span className="text-white font-bold text-lg leading-none">EA</span>
+              <span className="text-white font-bold text-lg leading-none">HX</span>
             </div>
             <AnimatePresence>
               {!isCollapsed && (
@@ -141,7 +141,7 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
                   exit={{ opacity: 0, width: 0 }}
                   className="whitespace-nowrap"
                 >
-                  <h2 className="font-bold text-[15px] text-slate-900 dark:text-slate-100 leading-tight">EA Platform</h2>
+                  <h2 className="font-bold text-[15px] text-slate-900 dark:text-slate-100 leading-tight">HexTorq Exams</h2>
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Admin Portal</p>
                 </motion.div>
               )}
@@ -238,15 +238,33 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
                   <div className="h-[72px] flex items-center px-4 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-3">
                       <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-inner shadow-blue-400">
-                        <span className="text-white font-bold text-lg leading-none">EA</span>
+                        <span className="text-white font-bold text-lg leading-none">HX</span>
                       </div>
                       <div>
-                        <h2 className="font-bold text-[15px] text-slate-900 dark:text-slate-100 leading-tight">EA Platform</h2>
+                        <h2 className="font-bold text-[15px] text-slate-900 dark:text-slate-100 leading-tight">HexTorq Exams</h2>
                         <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Portal</p>
                       </div>
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    {user?.role === 'ADMIN' && batches.length > 0 && (
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 px-1">Batch</label>
+                        <Select value={selectedBatchId ?? undefined} onValueChange={setSelectedBatchId}>
+                          <SelectTrigger className="h-10 w-full gap-2 rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-medium">
+                            <Layers className="h-3.5 w-3.5 text-slate-400" />
+                            <SelectValue placeholder="Select batch">
+                              {(value: string | null) => batches.find((b) => b.id === value)?.name ?? 'Select batch'}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {batches.map((b) => (
+                              <SelectItem key={b.id} value={b.id!}>{b.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <nav className="space-y-1">
                       {sidebarItems.map((item) => {
                         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');

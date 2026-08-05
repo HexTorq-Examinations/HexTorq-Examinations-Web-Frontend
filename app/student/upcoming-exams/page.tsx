@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useExamStore } from '@/store/examStore';
 import { api } from '@/lib/api';
 import { getTemporalStatus, hasCompletedMapping } from '@/lib/examMappingStatus';
+import { useServerClock } from '@/hooks/useServerClock';
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
   isSameDay, isSameMonth, addMonths, subMonths, format, differenceInCalendarDays,
@@ -72,19 +73,16 @@ export default function StudentUpcomingExams() {
   const [attemptStatus, setAttemptStatus] = useState<Record<string, AttemptStatus>>({});
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => new Date());
-  const [now, setNow] = useState(() => new Date());
+  // Server-synced clock — a student's device clock being wrong/skewed must
+  // never hide an exam that's actually active (or show one that isn't).
+  const serverNow = useServerClock();
+  const now = serverNow ?? new Date();
 
   useEffect(() => {
     fetchMyMappings();
     fetchExamHistory();
     api.get('/messages/notifications').then(({ data }) => setNotifications(data)).catch(() => {});
   }, [fetchMyMappings, fetchExamHistory]);
-
-  // Live countdown to each exam's start — ticks every second.
-  useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const activeMappings = myMappings.filter(m => getTemporalStatus(m, now) === 'active' && !hasCompletedMapping(m, examHistory));
   const upcomingMappings = myMappings.filter(m => getTemporalStatus(m, now) === 'upcoming' && !hasCompletedMapping(m, examHistory));

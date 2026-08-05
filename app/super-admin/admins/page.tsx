@@ -276,7 +276,7 @@ export default function AdminsPage() {
               <Label>Role *</Label>
               <Select value={form.role} onValueChange={(val) => setForm(f => ({ ...f, role: (val || 'Admin') as 'Admin' | 'Super Admin' }))}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Admin">Admin</SelectItem>
