@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
-import { ClipboardCheck, PlayCircle, CalendarClock, Edit3, MoreVertical, Settings, Eye, Copy, Trash2, Send, Users, Edit, Plus, ListChecks, MonitorPlay } from 'lucide-react';
+import { ClipboardCheck, PlayCircle, CalendarClock, Edit3, MoreVertical, Settings, Eye, Copy, Trash2, Send, Users, Edit, Plus, ListChecks, MonitorPlay, Archive } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,6 +55,7 @@ export function ExamsView({ role }: ExamsViewProps) {
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     fetchExams();
@@ -65,10 +66,16 @@ export function ExamsView({ role }: ExamsViewProps) {
     setEditModalOpen(true);
   };
 
+  // Closed exams are done — keep the list focused on what's still active
+  // (Draft/Published) by default instead of piling up every exam ever run,
+  // especially with duplicate/versioned copies accumulating over time.
+  const archivedCount = exams.filter((e) => e.status === 'Closed').length;
+
   // Filtering
-  const filteredExams = exams.filter(e => 
-    e.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    e.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredExams = exams.filter(e =>
+    (showArchived || e.status !== 'Closed') &&
+    (e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.subject.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Pagination
@@ -144,9 +151,17 @@ export function ExamsView({ role }: ExamsViewProps) {
         showSearch={true}
         onSearch={setSearchTerm}
         actions={
-          <Button onClick={handleAdd} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Plus className="w-4 h-4 mr-2" /> Create Exam
-          </Button>
+          <div className="flex items-center gap-2">
+            {archivedCount > 0 && (
+              <Button size="sm" variant="outline" onClick={() => { setShowArchived((v) => !v); setCurrentPage(1); }}>
+                <Archive className="w-3.5 h-3.5 mr-1.5" />
+                {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
+              </Button>
+            )}
+            <Button onClick={handleAdd} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Plus className="w-4 h-4 mr-2" /> Create Exam
+            </Button>
+          </div>
         }
       />
       

@@ -141,6 +141,7 @@ export const ResultSchema = z.object({
     active: z.coerce.number(),
     averageScorePercent: z.coerce.number(),
     passRate: z.coerce.number(),
+    date: z.string().optional(),
     startTime: z.string().optional(),
     endTime: z.string().optional(),
   })).optional(),

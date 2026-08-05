@@ -9,10 +9,15 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  
+  // localStorage rehydration is async — until this flips true, `user` may be
+  // null even for an actually-logged-in session. Route guards must wait for
+  // it, or a fresh page load briefly looks unauthenticated and redirects.
+  hasHydrated: boolean;
+
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,6 +28,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      hasHydrated: false,
 
       login: async (credentials: LoginCredentials) => {
         set({ isLoading: true, error: null });
@@ -60,15 +66,19 @@ export const useAuthStore = create<AuthState>()(
       },
 
       clearError: () => set({ error: null }),
+      setHasHydrated: (value: boolean) => set({ hasHydrated: value }),
     }),
     {
       name: 'auth-storage',
       // Only persist token and user info
-      partialize: (state) => ({ 
-        token: state.token, 
+      partialize: (state) => ({
+        token: state.token,
         user: state.user,
-        isAuthenticated: state.isAuthenticated 
+        isAuthenticated: state.isAuthenticated
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

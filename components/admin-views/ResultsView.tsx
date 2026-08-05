@@ -359,7 +359,9 @@ export function ResultsView({ role }: ResultsViewProps) {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="font-semibold text-slate-900 dark:text-slate-100">{mapping.className}</p>
-                                    <p className="mt-1 text-xs text-slate-500">{mapping.startTime || '-'} - {mapping.endTime || '-'} · {mapping.assignedStudents} assigned</p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                      {mapping.date ? new Date(mapping.date).toLocaleDateString() : '-'} · {mapping.startTime || '-'} - {mapping.endTime || '-'} · {mapping.assignedStudents} assigned
+                                    </p>
                                   </div>
                                   {mapping.active > 0 && <Badge className="bg-blue-100 text-blue-700">{mapping.active} active</Badge>}
                                 </div>

@@ -63,10 +63,10 @@ export function CodeQuestionPanel({ examId, questionId, initialCode, onCodeChang
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="rounded-lg overflow-hidden border border-slate-300">
+    <div className="flex flex-col gap-3 min-h-0">
+      <div className="rounded-lg overflow-hidden border border-slate-300 min-h-0" style={{ height: 420 }}>
         <Editor
-          height="420px"
+          height="100%"
           defaultLanguage="java"
           defaultValue={initialCode}
           theme="vs-dark"

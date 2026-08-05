@@ -15,28 +15,22 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useExamStore } from '@/store/examStore';
-import { useAdminStore } from '@/store/adminStore';
 
 export default function StudentCompletedExams() {
   const { examHistory, fetchExamHistory } = useExamStore();
-  const { exams, fetchExams } = useAdminStore();
 
   useEffect(() => {
-    fetchExams();
     fetchExamHistory();
-  }, [fetchExams, fetchExamHistory]);
+  }, [fetchExamHistory]);
 
-  const completedExams = (examHistory || []).map((h) => {
-    const examInfo = exams.find((e) => e.id === h.examId);
-    return {
-      id: h.examId,
-      title: examInfo?.title || 'Unknown Exam',
-      subject: examInfo?.subject || 'Unknown',
-      date: new Date(h.date).toLocaleDateString(),
-      duration: examInfo ? `${(examInfo.duration / 60).toFixed(1)} Hours` : '-',
-      status: h.status === 'TERMINATED' ? 'Terminated' : 'Submitted',
-    };
-  });
+  const completedExams = (examHistory || []).map((h) => ({
+    id: h.examId,
+    title: h.examTitle || 'Unknown Exam',
+    subject: h.examSubject || 'Unknown',
+    date: new Date(h.date).toLocaleDateString(),
+    duration: h.examDuration ? `${(h.examDuration / 60).toFixed(1)} Hours` : '-',
+    status: h.status === 'TERMINATED' ? 'Terminated' : 'Submitted',
+  }));
 
   const totalHours = completedExams.reduce((sum, e) => sum + (parseFloat(e.duration) || 0), 0);
 

@@ -18,6 +18,7 @@ export interface ExamHistoryEntry {
   examId: string;
   examTitle?: string;
   examSubject?: string;
+  examDuration?: number;
   totalMarks?: number;
   isTestExam?: boolean;
   status: 'COMPLETED' | 'TERMINATED';

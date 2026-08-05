@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Edit, Trash2, CalendarPlus, MapPin } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, CalendarPlus, MapPin, Archive } from 'lucide-react';
 import { useAdminStore } from '@/store/adminStore';
 import { ExamMapping } from '@/types/admin';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -37,6 +37,7 @@ export function ExamMappingView() {
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [mappingToDelete, setMappingToDelete] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     fetchExams();
@@ -45,6 +46,13 @@ export function ExamMappingView() {
 
   const selectedExam = exams.find((e) => e.id === selectedExamId) || null;
   const publishedExams = exams.filter((exam) => exam.status === 'Published');
+
+  // A mapping older than 30 days past its own end time is "done" — keep the
+  // table focused on what's current instead of piling up every exam ever run.
+  const RECENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+  const isRecentMapping = (mapping: ExamMapping) => Date.now() - new Date(mapping.endAt).getTime() < RECENT_WINDOW_MS;
+  const archivedCount = examMappings.filter((m) => !isRecentMapping(m)).length;
+  const visibleMappings = showArchived ? examMappings : examMappings.filter(isRecentMapping);
 
   const handleMap = (examId: string) => {
     setSelectedExamId(examId);
@@ -106,10 +114,19 @@ export function ExamMappingView() {
 
       {/* Existing mappings */}
       <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-6 pt-6">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100">Scheduled Mappings</h3>
+          {archivedCount > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setShowArchived((v) => !v)}>
+              <Archive className="w-3.5 h-3.5 mr-1.5" />
+              {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
+            </Button>
+          )}
+        </div>
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="p-4"><SkeletonTable rows={5} cols={6} /></div>
-          ) : examMappings.length > 0 ? (
+          ) : visibleMappings.length > 0 ? (
             <Table>
               <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
                 <TableRow className="border-slate-200 dark:border-slate-800 hover:bg-transparent">
@@ -123,7 +140,7 @@ export function ExamMappingView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {examMappings.map((mapping) => (
+                {visibleMappings.map((mapping) => (
                   <TableRow key={mapping.id} className="border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50">
                     <TableCell className="font-medium text-slate-900 dark:text-slate-100">{mapping.examTitle}</TableCell>
                     <TableCell className="text-slate-600 dark:text-slate-400">{mapping.className}</TableCell>

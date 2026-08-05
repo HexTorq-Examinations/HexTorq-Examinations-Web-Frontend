@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
-import { Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Clock, Maximize2, Minimize2, MonitorPlay, RefreshCcw, UserCheck, Users } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Clock, Maximize2, Minimize2, MonitorPlay, PanelLeftClose, PanelLeftOpen, RefreshCcw, UserCheck, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface LiveStudent {
@@ -187,6 +187,10 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
   const [isLoading, setIsLoading] = useState(true);
   const [socketStatus, setSocketStatus] = useState<'connecting' | 'connected' | 'fallback'>('fallback');
   const [wallMode, setWallMode] = useState(false);
+  // In wall mode the exam/classroom picker is collapsed by default so the
+  // student seat grid gets the full screen — it's still reachable via the
+  // collapse/expand toggle, just not competing with the seats for space.
+  const [wallSidebarOpen, setWallSidebarOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     writing: true,
     finished: true,
@@ -315,6 +319,7 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
 
   const enterWallMode = async () => {
     setWallMode(true);
+    setWallSidebarOpen(false);
     try {
       if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
     } catch {
@@ -406,6 +411,29 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
 
   return (
     <div className={wallMode ? 'fixed inset-0 z-[200] space-y-5 overflow-auto bg-slate-100 p-4 pb-10 dark:bg-slate-950' : 'space-y-6 pb-10'}>
+      {wallMode ? (
+        <div className="flex items-center justify-between gap-2 rounded-xl border bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setWallSidebarOpen((v) => !v)}>
+              {wallSidebarOpen ? <PanelLeftClose className="mr-2 h-4 w-4" /> : <PanelLeftOpen className="mr-2 h-4 w-4" />}
+              {wallSidebarOpen ? 'Collapse' : 'Expand'}
+            </Button>
+            <Badge
+              variant="outline"
+              className={socketStatus === 'connected'
+                ? 'h-9 rounded-lg border-emerald-200 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100'
+                : 'h-9 rounded-lg border-amber-200 bg-amber-50 px-3 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100'}
+            >
+              {socketStatus === 'connected' ? 'Realtime WS' : socketStatus === 'connecting' ? 'Connecting WS' : 'API fallback'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={load} disabled={isLoading}><RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+            <Button size="sm" variant="outline" onClick={exitWallMode}><Minimize2 className="mr-2 h-4 w-4" />Exit wall mode</Button>
+          </div>
+        </div>
+      ) : (
+        <>
       <PageHeader
         title="Live Exam Monitor"
         description="Monitor running exams and logged-in students by classroom."
@@ -469,6 +497,8 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
           </Card>
         ))}
       </div>}
+        </>
+      )}
 
       {mode === 'logins' ? (
         loginData.classrooms.length === 0 ? (
@@ -480,7 +510,8 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+          <div className={`grid gap-6 ${wallMode && !wallSidebarOpen ? '' : 'xl:grid-cols-[320px_1fr]'}`}>
+            {(!wallMode || wallSidebarOpen) && (
             <Card>
               <CardHeader><CardTitle className="text-base">Classrooms</CardTitle></CardHeader>
               <CardContent className="space-y-3">
@@ -502,6 +533,7 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
                 ))}
               </CardContent>
             </Card>
+            )}
 
             <Card>
               <CardHeader className="border-b">
@@ -544,7 +576,8 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+        <div className={`grid gap-6 ${wallMode && !wallSidebarOpen ? '' : 'xl:grid-cols-[320px_1fr]'}`}>
+          {(!wallMode || wallSidebarOpen) && (
           <div className="space-y-4">
             <Card>
               <CardHeader><CardTitle className="text-base">Running exams</CardTitle></CardHeader>
@@ -595,6 +628,7 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
               </Card>
             )}
           </div>
+          )}
 
           <Card>
             <CardHeader className="border-b">

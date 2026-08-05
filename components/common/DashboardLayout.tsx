@@ -35,7 +35,7 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, sidebarItems, title }: DashboardLayoutProps) {
-  const { user, logout } = useAuthStore();
+  const { user, logout, hasHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const { setTheme, theme } = useTheme();
@@ -84,16 +84,19 @@ export function DashboardLayout({ children, sidebarItems, title }: DashboardLayo
   const settingsHref = user?.role === 'STUDENT' ? '/student/notifications' : `${rolePrefix}/settings`;
   const notificationsHref = user?.role === 'STUDENT' ? '/student/notifications' : `${rolePrefix}/messages`;
 
-  // Client-side auth guard — redirect to login if not authenticated
+  // Client-side auth guard — redirect to login if not authenticated. Must wait
+  // for the auth store's localStorage rehydration (async), not just paint —
+  // otherwise a legitimately-logged-in user briefly looks unauthenticated on
+  // a fresh load and gets bounced / hits false "no permission" errors.
   useEffect(() => {
-    if (isMounted && !user) {
+    if (isMounted && hasHydrated && !user) {
       router.replace('/login');
     }
-  }, [user, router, isMounted]);
+  }, [user, router, isMounted, hasHydrated]);
 
   const serverNow = useServerClock();
 
-  if (!isMounted || !user) {
+  if (!isMounted || !hasHydrated || !user) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
