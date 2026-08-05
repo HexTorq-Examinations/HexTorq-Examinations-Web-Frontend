@@ -58,6 +58,11 @@ function SecureExamInterface() {
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [showPendingWarning, setShowPendingWarning] = useState(false);
   const [codingEvaluation, setCodingEvaluation] = useState<{ status: string; totalQuestions: number; evaluatedQuestions: number } | null>(null);
+  // A resumed attempt (page reload, or reopened after an admin extended the
+  // window) must go through the same explicit fullscreen gesture as a fresh
+  // start — the browser silently refuses requestFullscreen() outside a click,
+  // so this can't just happen automatically inside the load effect below.
+  const [pendingResume, setPendingResume] = useState<{ examId: string; snapshot: Parameters<typeof hydrateActiveAttempt>[1] } | null>(null);
 
   // Clear session if opening a different exam
   useEffect(() => {
@@ -92,7 +97,7 @@ function SecureExamInterface() {
           disableClipboard: data?.disableClipboard !== false,
         });
         if (data?.hasActiveAttempt && data?.startedAt && data?.expiresAt) {
-          hydrateActiveAttempt(currentExamId, {
+          const snapshot = {
             serverNow: data.serverNow,
             startedAt: data.startedAt,
             expiresAt: data.expiresAt,
@@ -100,7 +105,13 @@ function SecureExamInterface() {
             violations: data.violations || [],
             maxViolations: data.maxViolations,
             calculatorEnabled: data.calculatorEnabled,
-          });
+          };
+          const needsFullscreenGate = data?.strictFullscreen !== false && !document.fullscreenElement;
+          if (needsFullscreenGate) {
+            setPendingResume({ examId: currentExamId, snapshot });
+          } else {
+            hydrateActiveAttempt(currentExamId, snapshot);
+          }
         }
         setCurrentQuestionIdx(0);
         if (loadedQuestions.length === 0) {
@@ -136,6 +147,21 @@ function SecureExamInterface() {
       // leaving them stuck on a dead "Start Exam" screen.
       router.push('/student/upcoming-exams');
     }
+  };
+
+  const handleResumeExam = async () => {
+    if (!pendingResume) return;
+    try {
+      if (runtimeControls.strictFullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      // Fullscreen can be blocked by browser/user settings; still resume so
+      // the student isn't stuck — useProctoring's own violation tracking
+      // covers a student who genuinely isn't in fullscreen from here on.
+    }
+    hydrateActiveAttempt(pendingResume.examId, pendingResume.snapshot);
+    setPendingResume(null);
   };
 
   // Timer tick
@@ -266,6 +292,26 @@ function SecureExamInterface() {
           <Button onClick={() => setExamLoadAttempt((attempt) => attempt + 1)}>Try Again</Button>
           <Button variant="outline" onClick={() => router.push('/student/active-exams')}>Back to Active Exams</Button>
         </div>
+      </div>
+    );
+  }
+
+  if (pendingResume) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-900 p-6 text-white select-none">
+        <Card className="p-10 max-w-lg w-full text-center shadow-2xl border-none bg-slate-800 text-white">
+          <div className="flex justify-center mb-6">
+            <Monitor className="w-16 h-16 text-blue-400" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4">Resume Exam</h2>
+          <p className="text-slate-300 mb-8 text-lg">
+            You have an exam in progress. This examination requires a secure fullscreen environment — by clicking
+            &quot;Resume Exam&quot;, your browser will re-enter fullscreen mode.
+          </p>
+          <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg h-14 font-bold" onClick={handleResumeExam}>
+            Resume Exam
+          </Button>
+        </Card>
       </div>
     );
   }

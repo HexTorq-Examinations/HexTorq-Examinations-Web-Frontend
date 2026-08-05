@@ -13,9 +13,11 @@ export function NetworkPing({ variant = 'default' }: { variant?: 'default' | 'tr
     const checkPing = async () => {
       const start = Date.now();
       try {
-        await api.get('/time', { timeout: 3000 });
+        await api.get('/time', { timeout: 3000, silent: true });
         if (mounted) {
-          setPing(Date.now() - start);
+          // Date.now() - start is the full round trip; halve it for the
+          // one-way client-to-server time, which is what's actually shown.
+          setPing(Math.round((Date.now() - start) / 2));
         }
       } catch (err) {
         if (mounted) setPing(999);

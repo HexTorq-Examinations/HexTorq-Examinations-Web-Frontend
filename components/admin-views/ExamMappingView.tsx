@@ -53,7 +53,7 @@ export function ExamMappingView() {
   // A mapping older than 30 days past its own end time is "done" — keep the
   // table focused on what's current instead of piling up every exam ever run.
   const RECENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-  const isRecentMapping = (mapping: ExamMapping) => Date.now() - new Date(mapping.endAt).getTime() < RECENT_WINDOW_MS;
+  const isRecentMapping = (mapping: ExamMapping) => !mapping.endAt || Date.now() - new Date(mapping.endAt).getTime() < RECENT_WINDOW_MS;
   const archivedCount = examMappings.filter((m) => !isRecentMapping(m)).length;
   const visibleMappings = showArchived ? examMappings : examMappings.filter(isRecentMapping);
 

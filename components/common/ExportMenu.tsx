@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
@@ -102,10 +102,11 @@ export function ExportMenu({ exportKey, endpoint, columns, filename, params, dis
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" disabled={disabled || isDownloading}>
-            <Download className="mr-2 h-4 w-4" /> Export <ChevronDown className="ml-1.5 h-3.5 w-3.5 opacity-60" />
-          </Button>
+        <DropdownMenuTrigger
+          disabled={disabled || isDownloading}
+          className={buttonVariants({ variant: 'outline' })}
+        >
+          <Download className="mr-2 h-4 w-4" /> Export <ChevronDown className="ml-1.5 h-3.5 w-3.5 opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem className="cursor-pointer" onClick={() => download('xlsx')}>
