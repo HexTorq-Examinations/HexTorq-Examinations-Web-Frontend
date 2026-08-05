@@ -33,6 +33,9 @@ import { SkeletonTable } from '@/components/common/SkeletonTable';
 import { api } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { sanitizeQuestionOptions, simplifyImportedDateOption } from '@/lib/questionOptions';
+import { ExportMenu } from '@/components/common/ExportMenu';
+
+const RESULT_EXPORT_COLUMNS = ['Exam Name', 'Candidates', 'Date Published', 'Status', 'Avg Score %', 'Pass Rate %'];
 
 interface ResultsViewProps {
   role: 'admin' | 'super-admin';
@@ -279,9 +282,13 @@ export function ResultsView({ role }: ResultsViewProps) {
       <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950">
           <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">Exam Results Registry</h3>
-          <Button variant="outline" size="sm" className="h-8 shadow-sm" onClick={() => download('/results/export/all.csv', 'all-results.csv')}>
-            <Download className="w-4 h-4 mr-2" /> Download All
-          </Button>
+          <ExportMenu
+            exportKey="results"
+            endpoint="/results/export"
+            columns={RESULT_EXPORT_COLUMNS}
+            filename="results"
+            disabled={results.length === 0}
+          />
         </div>
         
         <div className="overflow-x-auto">
