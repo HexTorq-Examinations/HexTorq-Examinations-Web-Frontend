@@ -20,6 +20,9 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 import { useSuperAdminStore, Organization } from '@/store/superAdminStore';
+import { ExportMenu } from '@/components/common/ExportMenu';
+
+const ORG_EXPORT_COLUMNS = ['Name', 'Code', 'Domain', 'Admin Email', 'Status', 'Plan', 'Timezone', 'Admins', 'Students'];
 
 export default function OrganizationsPage() {
   const { organizations, fetchOrganizations, addOrganization, updateOrganization, deleteOrganization } = useSuperAdminStore();
@@ -66,9 +69,18 @@ export default function OrganizationsPage() {
         ]}
         showSearch={false}
         actions={
-          <Button onClick={() => setModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Plus className="mr-2 h-4 w-4" /> Add Organization
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportMenu
+              exportKey="organizations"
+              endpoint="/organizations/export"
+              columns={ORG_EXPORT_COLUMNS}
+              filename="organizations"
+              disabled={organizations.length === 0}
+            />
+            <Button onClick={() => setModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Plus className="mr-2 h-4 w-4" /> Add Organization
+            </Button>
+          </div>
         }
       />
 

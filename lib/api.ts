@@ -1,6 +1,17 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 import type { User } from '@/types/auth';
+import { useLoadingStore } from '@/store/loadingStore';
+
+// Marks a request as exempt from the global full-screen loading overlay.
+// Reserved for high-frequency background polling (exam timer sync, live
+// monitor, unread-count) where a blocking overlay firing every few seconds
+// would make the page unusable — everything else shows it by default.
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    silent?: boolean;
+  }
+}
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://metatronhost.in/hextorq-examinations/api',
@@ -20,6 +31,7 @@ const persistRefreshedSession = async (token: string, user: User) => {
 };
 
 api.interceptors.request.use((config) => {
+  if (!config.silent) useLoadingStore.getState().increment();
   if (typeof window !== 'undefined') {
     const raw = localStorage.getItem('auth-storage');
     if (raw) {
@@ -47,8 +59,12 @@ export interface ApiErrorWithRows extends Error {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (!response.config.silent) useLoadingStore.getState().decrement();
+    return response;
+  },
   async (error) => {
+    if (!error.config?.silent) useLoadingStore.getState().decrement();
     const original = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
     const isAuthRequest = typeof original?.url === 'string' && ['/auth/login', '/auth/refresh', '/auth/forgot-password', '/auth/reset-password'].some((path) => original.url?.includes(path));
     if (error.response?.status === 401 && original && !original._retry && !isAuthRequest && typeof window !== 'undefined') {

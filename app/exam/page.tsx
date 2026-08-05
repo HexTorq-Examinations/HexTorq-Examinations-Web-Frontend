@@ -177,7 +177,7 @@ function SecureExamInterface() {
     let cancelled = false;
     let interval: ReturnType<typeof setInterval> | null = null;
     const poll = () => {
-      api.get(`/exams/${currentExamId}/my-attempt`)
+      api.get(`/exams/${currentExamId}/my-attempt`, { silent: true })
         .then(({ data }) => {
           if (cancelled) return;
           const evaluation = data?.codingEvaluation || null;

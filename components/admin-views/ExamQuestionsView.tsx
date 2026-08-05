@@ -21,6 +21,9 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { QuestionFormModal } from './modals/QuestionFormModal';
 import { BulkQuestionEntryModal } from './modals/BulkQuestionEntryModal';
 import { FileImportQuestionsModal } from './modals/FileImportQuestionsModal';
+import { ExportMenu } from '@/components/common/ExportMenu';
+
+const QUESTION_EXPORT_COLUMNS = ['Question', 'Type', 'Subject', 'Difficulty', 'Marks', 'Options', 'Correct Answer', 'Explanation'];
 
 interface ExamQuestionsViewProps {
   examId: string;
@@ -83,6 +86,13 @@ export function ExamQuestionsView({ examId, role }: ExamQuestionsViewProps) {
         showSearch={false}
         actions={
           <div className="flex gap-3">
+            <ExportMenu
+              exportKey="questions"
+              endpoint={`/exams/${examId}/questions/export`}
+              columns={QUESTION_EXPORT_COLUMNS}
+              filename={`questions-${exam?.title || examId}`}
+              disabled={questions.length === 0}
+            />
             <Button onClick={() => setImportOpen(true)} variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950">
               <UploadCloud className="w-4 h-4 mr-2" /> Import File
             </Button>

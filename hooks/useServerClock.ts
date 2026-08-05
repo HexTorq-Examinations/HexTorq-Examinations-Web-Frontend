@@ -13,7 +13,7 @@ export function useServerClock() {
     let offsetMs = 0;
     let cancelled = false;
 
-    api.get('/time')
+    api.get('/time', { silent: true })
       .then(({ data }) => {
         if (cancelled) return;
         offsetMs = new Date(data.now).getTime() - Date.now();

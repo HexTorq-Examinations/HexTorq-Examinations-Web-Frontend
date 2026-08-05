@@ -34,6 +34,9 @@ import { api } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { StudentExamPreview, type PreviewExam } from './StudentExamPreview';
 import { sanitizeQuestionOptions } from '@/lib/questionOptions';
+import { ExportMenu } from '@/components/common/ExportMenu';
+
+const EXAM_EXPORT_COLUMNS = ['Title', 'Subject', 'Status', 'Duration (min)', 'Total Marks', 'Passing Marks', 'Questions', 'Mappings', 'Version', 'Test Exam'];
 
 interface ExamsViewProps {
   role: 'admin' | 'super-admin';
@@ -152,6 +155,13 @@ export function ExamsView({ role }: ExamsViewProps) {
         onSearch={setSearchTerm}
         actions={
           <div className="flex items-center gap-2">
+            <ExportMenu
+              exportKey="exams"
+              endpoint="/exams/export"
+              columns={EXAM_EXPORT_COLUMNS}
+              filename="exams"
+              disabled={exams.length === 0}
+            />
             {archivedCount > 0 && (
               <Button size="sm" variant="outline" onClick={() => { setShowArchived((v) => !v); setCurrentPage(1); }}>
                 <Archive className="w-3.5 h-3.5 mr-1.5" />

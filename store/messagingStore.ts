@@ -108,7 +108,7 @@ export const useMessagingStore = create<MessagingState>()((set, get) => ({
   },
 
   fetchUnreadTotal: async () => {
-    const { data } = await api.get('/messages/unread-count');
+    const { data } = await api.get('/messages/unread-count', { silent: true });
     set({ unreadTotal: data.count });
   },
 }));

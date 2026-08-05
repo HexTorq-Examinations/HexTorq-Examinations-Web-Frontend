@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserPlus, UserCheck, Clock, Search, Filter, Download, MoreVertical, Edit, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Users, UserPlus, UserCheck, Clock, Search, Filter, MoreVertical, Edit, Trash2, Plus, Loader2 } from 'lucide-react';
+import { ExportMenu } from '@/components/common/ExportMenu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 
 import { useSuperAdminStore, AdminUser } from '@/store/superAdminStore';
+
+const ADMIN_EXPORT_COLUMNS = ['Name', 'Employee ID', 'Email', 'Phone', 'Role', 'Organization', 'Status', 'Last Login'];
 
 export default function AdminsPage() {
   const { admins, fetchAdmins, addAdmin, updateAdmin, deleteAdmin, organizations, fetchOrganizations, addOrganization, isLoading } = useSuperAdminStore();
@@ -113,15 +116,6 @@ export default function AdminsPage() {
     await updateAdmin(admin.id, { status: admin.status === 'Active' ? 'Inactive' : 'Active' });
   };
 
-  const handleExport = () => {
-    const csv = ['Name,Employee ID,Email,Phone,Status', ...admins.map(a => `${a.name},${a.employeeId},${a.email},${a.phone},${a.status}`)].join('\n');
-    const link = document.createElement('a');
-    link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    link.setAttribute('download', 'admins.csv');
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    toast.success('Export downloaded');
-  };
-
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
@@ -171,9 +165,13 @@ export default function AdminsPage() {
               />
             </div>
           </div>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
+          <ExportMenu
+            exportKey="admins"
+            endpoint="/admins/export"
+            columns={ADMIN_EXPORT_COLUMNS}
+            filename="admins"
+            disabled={admins.length === 0}
+          />
         </div>
 
         <CardContent className="p-0">

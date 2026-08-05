@@ -31,6 +31,9 @@ import { StudentFormModal } from './modals/StudentFormModal';
 import { FileImportStudentsModal } from './modals/FileImportStudentsModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { ExportMenu } from '@/components/common/ExportMenu';
+
+const STUDENT_EXPORT_COLUMNS = ['Register Number', 'Name', 'Email', 'Phone', 'Status', 'Extra Time (min)', 'Accessibility Notes'];
 
 interface StudentsViewProps {
   role: 'admin' | 'super-admin';
@@ -81,27 +84,6 @@ export function StudentsView({ role, classId, className, onBack, breadcrumbs }: 
   });
 
   useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, accommodationFilter]);
-
-  const handleExport = () => {
-    if (filteredStudents.length === 0) return toast.error('There are no students to export');
-    const safe = (value: unknown) => {
-      let text = String(value ?? '');
-      if (/^[=+\-@]/.test(text)) text = `'${text}`;
-      return `"${text.replace(/"/g, '""')}"`;
-    };
-    const rows = [
-      ['Register Number', 'Name', 'Email', 'Phone', 'Status', 'Extra Time Minutes', 'Accessibility Notes'],
-      ...filteredStudents.map(s => [s.registerNumber, s.name, s.email, s.phone, s.status, s.extraTimeMinutes || 0, s.accessibilityNotes || '']),
-    ];
-    const blob = new Blob(['\uFEFF' + rows.map(row => row.map(safe).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `students-${className || classId}-${new Date().toISOString().slice(0, 10)}.csv`.replace(/[^a-z0-9._-]/gi, '-');
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success(`${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'} exported`);
-  };
 
   // Pagination
   const totalRecords = filteredStudents.length;
@@ -157,7 +139,6 @@ export function StudentsView({ role, classId, className, onBack, breadcrumbs }: 
         showSearch={true}
         onSearch={setSearchTerm}
         onFilter={() => setShowFilters(value => !value)}
-        onExport={handleExport}
         actions={
           <div className="flex gap-3">
             {onBack && (
@@ -165,6 +146,14 @@ export function StudentsView({ role, classId, className, onBack, breadcrumbs }: 
                 Back to Classes
               </Button>
             )}
+            <ExportMenu
+              exportKey="students"
+              endpoint="/students/export"
+              columns={STUDENT_EXPORT_COLUMNS}
+              filename={`students-${className || classId}`}
+              params={{ classId }}
+              disabled={students.length === 0}
+            />
             <Button onClick={() => setImportModalOpen(true)} variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950">
               <UploadCloud className="w-4 h-4 mr-2" /> Import File
             </Button>

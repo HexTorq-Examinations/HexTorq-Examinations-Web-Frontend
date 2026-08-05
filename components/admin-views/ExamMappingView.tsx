@@ -27,6 +27,9 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/common/SkeletonTable';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ExamMappingFormModal } from './modals/ExamMappingFormModal';
+import { ExportMenu } from '@/components/common/ExportMenu';
+
+const MAPPING_EXPORT_COLUMNS = ['Exam', 'Class', 'Date', 'Start Time', 'End Time', 'Timezone', 'Hall', 'Status', 'Grace (min)'];
 
 export function ExamMappingView() {
   const { exams, examMappings, isLoading, fetchExams, fetchExamMappings, deleteExamMapping } = useAdminStore();
@@ -86,6 +89,15 @@ export function ExamMappingView() {
         description="Assign exams to classes with a date, time, and hall — this is what schedules the exam for real students."
         breadcrumbs={[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Exam Mapping' }]}
         showSearch={false}
+        actions={
+          <ExportMenu
+            exportKey="exam-mappings"
+            endpoint="/exam-mappings/export"
+            columns={MAPPING_EXPORT_COLUMNS}
+            filename="exam-mappings"
+            disabled={examMappings.length === 0}
+          />
+        }
       />
 
       {/* Exams available to map */}

@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import QueryProvider from '@/providers/QueryProvider';
 import { ExamSyncProvider } from '@/providers/ExamSyncProvider';
+import { GlobalLoadingOverlay } from '@/components/common/GlobalLoadingOverlay';
 import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -30,6 +31,7 @@ export default function RootLayout({
           <QueryProvider>
             <ExamSyncProvider />
             {children}
+            <GlobalLoadingOverlay />
             <Toaster richColors position="top-right" />
           </QueryProvider>
         </ThemeProvider>

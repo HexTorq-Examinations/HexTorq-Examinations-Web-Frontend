@@ -99,10 +99,12 @@ export function PageHeader({
               <Filter className="mr-2 h-4 w-4 text-slate-500" />
               Filters
             </Button>
-            <Button type="button" variant="outline" onClick={onExport} disabled={!onExport} className="h-10 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm flex-1 sm:flex-none">
-              <Download className="mr-2 h-4 w-4 text-slate-500" />
-              Export
-            </Button>
+            {onExport && (
+              <Button type="button" variant="outline" onClick={onExport} className="h-10 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm flex-1 sm:flex-none">
+                <Download className="mr-2 h-4 w-4 text-slate-500" />
+                Export
+              </Button>
+            )}
           </div>
         </div>
       )}

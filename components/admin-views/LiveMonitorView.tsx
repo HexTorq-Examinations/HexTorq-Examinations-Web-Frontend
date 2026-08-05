@@ -221,8 +221,8 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
     const run = async () => {
       try {
         const [{ data: payload }, { data: loginPayload }] = await Promise.all([
-          api.get<LivePayload>('/results/live'),
-          api.get<LoginPayload>('/results/live-logins'),
+          api.get<LivePayload>('/results/live', { silent: true }),
+          api.get<LoginPayload>('/results/live-logins', { silent: true }),
         ]);
         if (cancelled) return;
         setData(payload);

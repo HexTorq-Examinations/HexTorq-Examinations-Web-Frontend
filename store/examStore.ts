@@ -197,7 +197,7 @@ export const useExamStore = create<ExamState>()(
       refreshAttemptStatus: async () => {
         const { examId } = get();
         if (!examId) return;
-        const { data } = await api.get(`/exams/${examId}/my-attempt`);
+        const { data } = await api.get(`/exams/${examId}/my-attempt`, { silent: true });
         const serverTimeOffsetMs = new Date(data.serverNow).getTime() - Date.now();
 
         if (!data.hasActiveAttempt && (data.status === 'COMPLETED' || data.status === 'TERMINATED')) {
@@ -312,7 +312,7 @@ export const useExamStore = create<ExamState>()(
           for (const questionId of [...get().unsyncedQuestionIds]) {
             const answer = get().answers[questionId];
             try {
-              await api.post(`/exams/${examId}/answer`, { questionId, answer });
+              await api.post(`/exams/${examId}/answer`, { questionId, answer }, { silent: true });
               set((state) => ({
                 unsyncedQuestionIds: acknowledge(state.unsyncedQuestionIds, questionId),
               }));
@@ -343,7 +343,7 @@ export const useExamStore = create<ExamState>()(
                 type: violation.type,
                 description: violation.description,
                 clientViolationId,
-              });
+              }, { silent: true });
               set((state) => ({
                 unsyncedViolationIds: acknowledge(state.unsyncedViolationIds, clientViolationId),
                 ...(data.status === 'TERMINATED' ? { status: 'TERMINATED' as ExamStatus } : {}),
