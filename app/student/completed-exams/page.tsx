@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useExamStore } from '@/store/examStore';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function StudentCompletedExams() {
   const { examHistory, fetchExamHistory } = useExamStore();
@@ -30,7 +32,26 @@ export default function StudentCompletedExams() {
     date: new Date(h.date).toLocaleDateString(),
     duration: h.examDuration ? `${(h.examDuration / 60).toFixed(1)} Hours` : '-',
     status: h.status === 'TERMINATED' ? 'Terminated' : 'Submitted',
+    isPublished: h.resultStatus === 'Published',
   }));
+
+  const handleViewDetails = async (examId: string, title: string, isPublished: boolean) => {
+    if (!isPublished) {
+      toast.info('Results for this exam have not been published yet.');
+      return;
+    }
+    try {
+      const { data } = await api.get(`/exams/${examId}/scorecard.pdf`, { responseType: 'blob' });
+      const href = URL.createObjectURL(data);
+      const anchor = document.createElement('a');
+      anchor.href = href;
+      anchor.download = `${title}-scorecard.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(href);
+    } catch {
+      toast.error('Unable to download the scorecard right now.');
+    }
+  };
 
   const totalHours = completedExams.reduce((sum, e) => sum + (parseFloat(e.duration) || 0), 0);
 
@@ -119,8 +140,12 @@ export default function StudentCompletedExams() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50">
-                            <FileText className="mr-2 h-4 w-4" /> Details
+                          <Button
+                            variant="ghost"
+                            className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50"
+                            onClick={() => handleViewDetails(exam.id, exam.title, exam.isPublished)}
+                          >
+                            <FileText className="mr-2 h-4 w-4" /> {exam.isPublished ? 'Details' : 'Pending'}
                           </Button>
                         </TableCell>
                       </TableRow>
