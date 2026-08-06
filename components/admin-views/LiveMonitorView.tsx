@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { api } from '@/lib/api';
+import { io, type Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/authStore';
 import { Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Clock, Maximize2, Minimize2, MonitorPlay, PanelLeftClose, PanelLeftOpen, RefreshCcw, UserCheck, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -98,12 +99,10 @@ interface LoginPayload {
   classrooms: LoginClassroom[];
 }
 
-interface LiveMonitorSocketMessage {
-  type: 'live-monitor:connected' | 'live-monitor:update' | 'live-monitor:error';
-  serverNow?: string;
+interface LiveMonitorUpdateMessage {
+  serverNow: string;
   live?: LivePayload;
   logins?: LoginPayload;
-  message?: string;
 }
 
 const statusStyle: Record<LiveStudent['status'], string> = {
@@ -129,13 +128,11 @@ const formatTime = (value?: string | null) => {
   return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const buildLiveMonitorSocketUrl = (token: string) => {
+const buildLiveMonitorSocketBase = () => {
   const apiBase = String(process.env.NEXT_PUBLIC_API_URL || api.defaults.baseURL || '').replace(/\/$/, '');
   const url = new URL(apiBase);
-  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  url.pathname = url.pathname.replace(/\/api\/?$/, '/ws/live-monitor');
-  url.searchParams.set('token', token);
-  return url.toString();
+  url.pathname = url.pathname.replace(/\/api\/?$/, '');
+  return url.toString().replace(/\/$/, '');
 };
 
 function SeatGroup({
@@ -246,58 +243,49 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
       return;
     }
 
-    let closedByEffect = false;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let socket: WebSocket | null = null;
+    setSocketStatus('connecting');
+    // socket.io tries HTTP long-polling first and transparently upgrades to a
+    // native WebSocket when possible — on networks that block the raw WS
+    // Upgrade handshake specifically (some institutional/corporate proxies)
+    // while allowing plain HTTPS through, polling still gets through and
+    // keeps this "realtime" instead of silently sitting in the 5s-poll fallback.
+    const socket: Socket = io(buildLiveMonitorSocketBase(), {
+      path: '/ws/live-monitor',
+      query: { token },
+      reconnectionDelay: 5000,
+      reconnectionDelayMax: 5000,
+    });
 
-    const connect = () => {
-      setSocketStatus('connecting');
-      socket = new WebSocket(buildLiveMonitorSocketUrl(token));
+    socket.on('connect', () => {
+      socket.emit('live-monitor:subscribe', { mode: 'both' });
+    });
 
-      socket.onopen = () => {
-        socket?.send(JSON.stringify({ type: 'live-monitor:subscribe', mode: 'both' }));
-      };
+    socket.on('live-monitor:connected', () => {
+      setSocketStatus('connected');
+    });
 
-      socket.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data) as LiveMonitorSocketMessage;
-          if (message.type === 'live-monitor:connected') {
-            setSocketStatus('connected');
-            return;
-          }
-          if (message.type === 'live-monitor:update') {
-            setSocketStatus('connected');
-            if (message.live) {
-              setData(message.live);
-              setSelectedExamId((current) => current && message.live!.exams.some((exam) => exam.examId === current) ? current : message.live!.exams[0]?.examId || null);
-            }
-            if (message.logins) {
-              setLoginData(message.logins);
-              setSelectedClassId((current) => current && message.logins!.classrooms.some((classroom) => classroom.classId === current) ? current : message.logins!.classrooms[0]?.classId || null);
-            }
-          }
-        } catch {
-          // Ignore malformed socket payloads and keep the existing data visible.
-        }
-      };
+    socket.on('live-monitor:update', (message: LiveMonitorUpdateMessage) => {
+      setSocketStatus('connected');
+      if (message.live) {
+        setData(message.live);
+        setSelectedExamId((current) => current && message.live!.exams.some((exam) => exam.examId === current) ? current : message.live!.exams[0]?.examId || null);
+      }
+      if (message.logins) {
+        setLoginData(message.logins);
+        setSelectedClassId((current) => current && message.logins!.classrooms.some((classroom) => classroom.classId === current) ? current : message.logins!.classrooms[0]?.classId || null);
+      }
+    });
 
-      socket.onerror = () => {
-        setSocketStatus('fallback');
-      };
+    socket.on('connect_error', () => {
+      setSocketStatus('fallback');
+    });
 
-      socket.onclose = () => {
-        if (closedByEffect) return;
-        setSocketStatus('fallback');
-        retryTimer = setTimeout(connect, 5000);
-      };
-    };
-
-    connect();
+    socket.on('disconnect', () => {
+      setSocketStatus('fallback');
+    });
 
     return () => {
-      closedByEffect = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      socket?.close();
+      socket.disconnect();
     };
   }, [token]);
 

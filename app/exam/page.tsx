@@ -439,7 +439,7 @@ function SecureExamInterface() {
                   <span>Syncing...</span>
                 </>
               ) : (
-                <NetworkPing variant="transparent" />
+                <NetworkPing />
               )}
             </span>
           </div>
