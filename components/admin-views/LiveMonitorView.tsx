@@ -128,11 +128,18 @@ const formatTime = (value?: string | null) => {
   return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const buildLiveMonitorSocketBase = () => {
+// socket.io-client's `path` option is always resolved against the *origin*
+// of the uri argument — any path segment in the uri itself (e.g. a reverse
+// proxy prefix like /hextorq-examinations) is silently discarded. So the
+// full external path has to be built into `path` explicitly, not the uri.
+const buildLiveMonitorSocketConfig = () => {
   const apiBase = String(process.env.NEXT_PUBLIC_API_URL || api.defaults.baseURL || '').replace(/\/$/, '');
   const url = new URL(apiBase);
-  url.pathname = url.pathname.replace(/\/api\/?$/, '');
-  return url.toString().replace(/\/$/, '');
+  const prefix = url.pathname.replace(/\/api\/?$/, '');
+  return {
+    uri: url.origin,
+    path: `${prefix}/ws/live-monitor`,
+  };
 };
 
 function SeatGroup({
@@ -249,8 +256,9 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
     // Upgrade handshake specifically (some institutional/corporate proxies)
     // while allowing plain HTTPS through, polling still gets through and
     // keeps this "realtime" instead of silently sitting in the 5s-poll fallback.
-    const socket: Socket = io(buildLiveMonitorSocketBase(), {
-      path: '/ws/live-monitor',
+    const { uri, path } = buildLiveMonitorSocketConfig();
+    const socket: Socket = io(uri, {
+      path,
       query: { token },
       reconnectionDelay: 5000,
       reconnectionDelayMax: 5000,
