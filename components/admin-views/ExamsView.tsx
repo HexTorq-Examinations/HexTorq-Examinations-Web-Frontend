@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
-import { ClipboardCheck, PlayCircle, CalendarClock, Edit3, MoreVertical, Settings, Eye, Copy, Trash2, Send, Users, Edit, Plus, ListChecks, MonitorPlay, Archive } from 'lucide-react';
+import { ClipboardCheck, PlayCircle, CalendarClock, Edit3, MoreVertical, Settings, Eye, Copy, Trash2, Send, Users, Edit, Plus, ListChecks, MonitorPlay } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -58,28 +59,35 @@ export function ExamsView({ role }: ExamsViewProps) {
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
-  const [showArchived, setShowArchived] = useState(false);
+  // Closed exams are done, and test exams are for trying things out — keep
+  // the default list focused on what's actually active instead of piling up
+  // every exam ever run, especially with duplicate/versioned copies.
+  const [examTab, setExamTab] = useState<'active' | 'test' | 'archived'>('active');
 
   useEffect(() => {
     fetchExams();
   }, [fetchExams]);
+
+  useEffect(() => { setCurrentPage(1); }, [examTab]);
 
   const handleAdd = () => {
     setExamToEdit(null);
     setEditModalOpen(true);
   };
 
-  // Closed exams are done — keep the list focused on what's still active
-  // (Draft/Published) by default instead of piling up every exam ever run,
-  // especially with duplicate/versioned copies accumulating over time.
-  const archivedCount = exams.filter((e) => e.status === 'Closed').length;
+  const testCount = exams.filter((e) => e.isTestExam).length;
+  const archivedCount = exams.filter((e) => !e.isTestExam && e.status === 'Closed').length;
 
   // Filtering
-  const filteredExams = exams.filter(e =>
-    (showArchived || e.status !== 'Closed') &&
-    (e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.subject.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredExams = exams.filter(e => {
+    const matchesTab = examTab === 'test' ? !!e.isTestExam
+      : examTab === 'archived' ? (!e.isTestExam && e.status === 'Closed')
+      : (!e.isTestExam && e.status !== 'Closed');
+    return matchesTab && (
+      e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.subject.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   // Pagination
   const totalRecords = filteredExams.length;
@@ -162,19 +170,21 @@ export function ExamsView({ role }: ExamsViewProps) {
               filename="exams"
               disabled={exams.length === 0}
             />
-            {archivedCount > 0 && (
-              <Button size="sm" variant="outline" onClick={() => { setShowArchived((v) => !v); setCurrentPage(1); }}>
-                <Archive className="w-3.5 h-3.5 mr-1.5" />
-                {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
-              </Button>
-            )}
             <Button onClick={handleAdd} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <Plus className="w-4 h-4 mr-2" /> Create Exam
             </Button>
           </div>
         }
       />
-      
+
+      <Tabs value={examTab} onValueChange={(v) => setExamTab(v as 'active' | 'test' | 'archived')}>
+        <TabsList>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="test">Test Exams{testCount > 0 ? ` (${testCount})` : ''}</TabsTrigger>
+          <TabsTrigger value="archived">Archived{archivedCount > 0 ? ` (${archivedCount})` : ''}</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
