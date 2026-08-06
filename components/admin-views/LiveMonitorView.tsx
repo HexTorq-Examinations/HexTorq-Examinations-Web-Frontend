@@ -190,6 +190,10 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [socketStatus, setSocketStatus] = useState<'connecting' | 'connected' | 'fallback'>('fallback');
+  // One-way latency measured over the live socket itself (ack round-trip
+  // halved) — only meaningful while actually connected, unlike the navbar's
+  // plain HTTP ping which always uses a REST call.
+  const [socketPingMs, setSocketPingMs] = useState<number | null>(null);
   const [wallMode, setWallMode] = useState(false);
   // In wall mode the exam/classroom picker is collapsed by default so the
   // student seat grid gets the full screen — it's still reachable via the
@@ -264,8 +268,19 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
       reconnectionDelayMax: 5000,
     });
 
+    let pingInterval: ReturnType<typeof setInterval> | null = null;
+    const checkSocketPing = () => {
+      const start = Date.now();
+      socket.emit('live-monitor:ping', {}, () => {
+        setSocketPingMs(Math.round((Date.now() - start) / 2));
+      });
+    };
+
     socket.on('connect', () => {
       socket.emit('live-monitor:subscribe', { mode: 'both' });
+      checkSocketPing();
+      if (pingInterval) clearInterval(pingInterval);
+      pingInterval = setInterval(checkSocketPing, 10000);
     });
 
     socket.on('live-monitor:connected', () => {
@@ -286,13 +301,17 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
 
     socket.on('connect_error', () => {
       setSocketStatus('fallback');
+      setSocketPingMs(null);
     });
 
     socket.on('disconnect', () => {
       setSocketStatus('fallback');
+      setSocketPingMs(null);
+      if (pingInterval) clearInterval(pingInterval);
     });
 
     return () => {
+      if (pingInterval) clearInterval(pingInterval);
       socket.disconnect();
     };
   }, [token]);
@@ -420,7 +439,7 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
                 ? 'h-9 rounded-lg border-emerald-200 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100'
                 : 'h-9 rounded-lg border-amber-200 bg-amber-50 px-3 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100'}
             >
-              {socketStatus === 'connected' ? 'Realtime WS' : socketStatus === 'connecting' ? 'Connecting WS' : 'API fallback'}
+              {socketStatus === 'connected' ? `Realtime WS${socketPingMs !== null ? ` · ${socketPingMs}ms` : ''}` : socketStatus === 'connecting' ? 'Connecting WS' : 'API fallback'}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
@@ -443,7 +462,7 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
                 ? 'h-10 rounded-lg border-emerald-200 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100'
                 : 'h-10 rounded-lg border-amber-200 bg-amber-50 px-3 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100'}
             >
-              {socketStatus === 'connected' ? 'Realtime WS' : socketStatus === 'connecting' ? 'Connecting WS' : 'API fallback'}
+              {socketStatus === 'connected' ? `Realtime WS${socketPingMs !== null ? ` · ${socketPingMs}ms` : ''}` : socketStatus === 'connecting' ? 'Connecting WS' : 'API fallback'}
             </Badge>
             <Button variant="outline" onClick={wallMode ? exitWallMode : enterWallMode}>
               {wallMode ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
