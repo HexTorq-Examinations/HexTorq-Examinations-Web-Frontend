@@ -75,6 +75,7 @@ interface LoggedInStudent {
   isLoggedIn: boolean;
   activeSessionCount: number;
   lastLoginAt: string | null;
+  lastActiveAt: string | null;
   currentSessionStartedAt: string | null;
   sessionExpiresAt: string | null;
 }
@@ -398,10 +399,10 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
       <div className="min-h-[78px]">
         <p className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{student.registerNumber}</p>
         <p className="mt-1 line-clamp-2 font-bold text-slate-950 dark:text-slate-50">{student.name}</p>
-        <p className="mt-1 text-xs">{student.isLoggedIn ? 'Logged in' : 'Not logged in yet'}</p>
+        <p className="mt-1 text-xs">{student.isLoggedIn ? 'Active now' : 'Not active right now'}</p>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-lg bg-white/70 p-2 dark:bg-slate-950/60"><Clock className="mb-1 h-3.5 w-3.5" />Last login {formatTime(student.lastLoginAt)}</div>
+        <div className="rounded-lg bg-white/70 p-2 dark:bg-slate-950/60"><Clock className="mb-1 h-3.5 w-3.5" />Last active {formatTime(student.lastActiveAt || student.lastLoginAt)}</div>
         <div className="rounded-lg bg-white/70 p-2 dark:bg-slate-950/60"><Activity className="mb-1 h-3.5 w-3.5" />{student.activeSessionCount} active session{student.activeSessionCount === 1 ? '' : 's'}</div>
       </div>
       {student.isLoggedIn && (
