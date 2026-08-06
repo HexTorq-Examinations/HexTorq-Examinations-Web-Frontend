@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Hexagon, ArrowRight, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Hexagon, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -72,8 +72,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-br from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
               HexTorq Exams
             </h1>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
               Online Examination Platform
             </p>
           </div>
