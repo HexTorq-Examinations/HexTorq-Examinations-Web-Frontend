@@ -89,9 +89,11 @@ api.interceptors.response.use(
       }
     }
     const message = error.response?.data?.message || error.message || 'Request failed';
-    
-    // Globally toast all API errors
-    if (typeof window !== 'undefined' && message !== 'Request failed with status code 401') {
+
+    // Globally toast all API errors — except requests explicitly marked
+    // silent (background polling, e.g. the network ping check), which
+    // shouldn't interrupt the user just because one check was slow/failed.
+    if (typeof window !== 'undefined' && message !== 'Request failed with status code 401' && !error.config?.silent) {
       toast.error(message);
     }
     
