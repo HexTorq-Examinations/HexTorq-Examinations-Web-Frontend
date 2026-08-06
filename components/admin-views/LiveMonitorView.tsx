@@ -150,6 +150,7 @@ function SeatGroup({
   expanded,
   onToggle,
   children,
+  columns,
 }: {
   title: string;
   count: number;
@@ -157,6 +158,7 @@ function SeatGroup({
   expanded: boolean;
   onToggle: () => void;
   children: ReactNode;
+  columns?: number;
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
@@ -172,7 +174,10 @@ function SeatGroup({
         <Badge className={tone}>{count}</Badge>
       </button>
       {expanded && (
-        <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        <div
+          className={columns ? 'grid gap-4 p-4' : 'grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'}
+          style={columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
+        >
           {count > 0 ? children : <p className="col-span-full py-6 text-center text-sm text-slate-500">No students in this group.</p>}
         </div>
       )}
@@ -200,6 +205,11 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
   // student seat grid gets the full screen — it's still reachable via the
   // collapse/expand toggle, just not competing with the seats for space.
   const [wallSidebarOpen, setWallSidebarOpen] = useState(false);
+  // Seats-per-row in wall mode — bigger classes/monitors want denser grids.
+  const [wallColumns, setWallColumns] = useState(4);
+  // Ticks every second purely to keep the "ends in Xm Ys" countdown live
+  // between the ~2s data refreshes — not authoritative, just display smoothing.
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     writing: true,
     finished: true,
@@ -208,6 +218,11 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
     loggedIn: true,
     notLoggedIn: true,
   });
+
+  useEffect(() => {
+    const tick = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
 
   const load = async () => {
     setIsLoading(true);
@@ -354,6 +369,15 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
 
   const renderExamSeat = (student: LiveStudent, index: number) => {
     const progress = student.totalQuestions > 0 ? Math.round((student.answeredCount / student.totalQuestions) * 100) : 0;
+    const remainingMs = student.status === 'IN_PROGRESS' && student.expiresAt
+      ? new Date(student.expiresAt).getTime() - nowTick
+      : null;
+    const endingSoon = remainingMs !== null && remainingMs > 0 && remainingMs <= 5 * 60 * 1000;
+    const timeLabel = endingSoon && remainingMs !== null
+      ? `Ends in ${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}`
+      : student.status === 'IN_PROGRESS'
+        ? `Ends ${formatTime(student.expiresAt)}`
+        : formatTime(student.endedAt || student.startedAt);
     return (
       <div key={student.userId} className={`rounded-2xl border p-4 shadow-sm ${statusStyle[student.status] || statusStyle.NOT_STARTED}`}>
         <div className="mb-3 flex items-center justify-between">
@@ -375,7 +399,7 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
           <Progress value={progress} className="h-2" />
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-lg bg-white/70 p-2 dark:bg-slate-950/60"><Clock className="mb-1 h-3.5 w-3.5" />{student.status === 'IN_PROGRESS' ? `Ends ${formatTime(student.expiresAt)}` : formatTime(student.endedAt || student.startedAt)}</div>
+          <div className={`rounded-lg p-2 ${endingSoon ? 'bg-red-100 text-red-800 font-bold dark:bg-red-950/60 dark:text-red-100 animate-pulse' : 'bg-white/70 dark:bg-slate-950/60'}`}><Clock className="mb-1 h-3.5 w-3.5" />{timeLabel}</div>
           <div className={`rounded-lg p-2 ${student.violationsCount > 0 ? 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-100' : 'bg-white/70 dark:bg-slate-950/60'}`}><AlertTriangle className="mb-1 h-3.5 w-3.5" />{student.violationsCount} violation{student.violationsCount === 1 ? '' : 's'}</div>
         </div>
         {!!student.violationsCount && (
@@ -413,9 +437,22 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
     </div>
   );
 
+  const latestViolationTime = (student: LiveStudent) => {
+    const last = student.violations?.at(-1)?.timestamp;
+    return last ? new Date(last).getTime() : 0;
+  };
+
   const examSeatGroups = selectedMapping ? {
-    violations: selectedMapping.students.filter((student) => student.status === 'TERMINATED' || student.violationsCount > 0),
-    writing: selectedMapping.students.filter((student) => ['IN_PROGRESS', 'FINALIZING'].includes(student.status) && student.violationsCount === 0),
+    // Most recently violated students first, so a fresh violation is
+    // immediately visible without having to scan the whole grid.
+    violations: selectedMapping.students
+      .filter((student) => student.status === 'TERMINATED' || student.violationsCount > 0)
+      .sort((a, b) => latestViolationTime(b) - latestViolationTime(a)),
+    // Students with the least time left bubble to the top, so anyone about
+    // to run out of time is easy to spot at a glance.
+    writing: selectedMapping.students
+      .filter((student) => ['IN_PROGRESS', 'FINALIZING'].includes(student.status) && student.violationsCount === 0)
+      .sort((a, b) => new Date(a.expiresAt || 0).getTime() - new Date(b.expiresAt || 0).getTime()),
     finished: selectedMapping.students.filter((student) => student.status === 'COMPLETED' && student.violationsCount === 0),
     notStarted: selectedMapping.students.filter((student) => ['NOT_STARTED', 'RESET'].includes(student.status)),
   } : null;
@@ -442,6 +479,19 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
             >
               {socketStatus === 'connected' ? `Realtime WS${socketPingMs !== null ? ` · ${socketPingMs}ms` : ''}` : socketStatus === 'connecting' ? 'Connecting WS' : 'API fallback'}
             </Badge>
+            <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-1 dark:border-slate-800">
+              <span className="px-1.5 text-xs font-medium text-slate-500">Per row</span>
+              {Array.from({ length: 7 }, (_, i) => i + 2).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setWallColumns(n)}
+                  className={`h-7 w-7 rounded-md text-xs font-semibold transition-colors ${wallColumns === n ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={load} disabled={isLoading}><RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
@@ -668,16 +718,16 @@ export function LiveMonitorView({ role }: { role: 'admin' | 'super-admin' }) {
                 <p className="py-10 text-center text-slate-500">Select a running exam mapping to view the live classroom.</p>
               ) : (
                 <div className="space-y-4">
-                  <SeatGroup title="Writing now" count={examSeatGroups?.writing.length || 0} tone="bg-blue-100 text-blue-700" expanded={expandedGroups.writing ?? true} onToggle={() => toggleGroup('writing')}>
+                  <SeatGroup title="Writing now" count={examSeatGroups?.writing.length || 0} tone="bg-blue-100 text-blue-700" expanded={expandedGroups.writing ?? true} onToggle={() => toggleGroup('writing')} columns={wallMode ? wallColumns : undefined}>
                     {examSeatGroups?.writing.map((student, index) => renderExamSeat(student, index))}
                   </SeatGroup>
-                  <SeatGroup title="Finished" count={examSeatGroups?.finished.length || 0} tone="bg-emerald-100 text-emerald-700" expanded={expandedGroups.finished ?? true} onToggle={() => toggleGroup('finished')}>
+                  <SeatGroup title="Finished" count={examSeatGroups?.finished.length || 0} tone="bg-emerald-100 text-emerald-700" expanded={expandedGroups.finished ?? true} onToggle={() => toggleGroup('finished')} columns={wallMode ? wallColumns : undefined}>
                     {examSeatGroups?.finished.map((student, index) => renderExamSeat(student, (examSeatGroups?.writing.length || 0) + index))}
                   </SeatGroup>
-                  <SeatGroup title="Violations / terminated" count={examSeatGroups?.violations.length || 0} tone="bg-red-100 text-red-700" expanded={expandedGroups.violations ?? true} onToggle={() => toggleGroup('violations')}>
+                  <SeatGroup title="Violations / terminated" count={examSeatGroups?.violations.length || 0} tone="bg-red-100 text-red-700" expanded={expandedGroups.violations ?? true} onToggle={() => toggleGroup('violations')} columns={wallMode ? wallColumns : undefined}>
                     {examSeatGroups?.violations.map((student, index) => renderExamSeat(student, (examSeatGroups?.writing.length || 0) + (examSeatGroups?.finished.length || 0) + index))}
                   </SeatGroup>
-                  <SeatGroup title="Not started students" count={examSeatGroups?.notStarted.length || 0} tone="bg-slate-100 text-slate-700" expanded={expandedGroups.notStarted ?? true} onToggle={() => toggleGroup('notStarted')}>
+                  <SeatGroup title="Not started students" count={examSeatGroups?.notStarted.length || 0} tone="bg-slate-100 text-slate-700" expanded={expandedGroups.notStarted ?? true} onToggle={() => toggleGroup('notStarted')} columns={wallMode ? wallColumns : undefined}>
                     {examSeatGroups?.notStarted.map((student, index) => renderExamSeat(student, (examSeatGroups?.writing.length || 0) + (examSeatGroups?.finished.length || 0) + (examSeatGroups?.violations.length || 0) + index))}
                   </SeatGroup>
                 </div>
