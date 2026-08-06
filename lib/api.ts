@@ -14,7 +14,7 @@ declare module 'axios' {
 }
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://metatronhost.in/hextorq-examinations/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://git-pipeline.metatronhost.in/hextorq-examinations/api',
   withCredentials: true,
 });
 
